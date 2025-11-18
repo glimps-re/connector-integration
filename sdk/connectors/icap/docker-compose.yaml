@@ -1,0 +1,10 @@
+name: icap-server
+services:
+  icap-server:
+    image: glimpsre/icap-detect:latest
+    environment:
+      CONSOLE_URL: {{ .URL }}
+      CONSOLE_API_KEY: {{ .APIKey }}
+      CONSOLE_API_INSECURE: {{ .Insecure }}
+    ports:
+    - 1344:1344

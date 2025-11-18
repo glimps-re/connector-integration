@@ -1,0 +1,20 @@
+name: ICAP Connector
+description: |
+  This server provides an ICAP frontend to analyse files with GLIMPS Malware Detect.
+
+  The Internet Content Adaptation Protocol (ICAP) is an HTTP protocol defined in RFC 3507 which is used to extend transparent proxy servers. ICAP is generally used to set up virus detection and content filtering.
+  This protocol focuses on modifying both requests and responses. It offers 2 modes: reqmod (Request Modification) and respmod (Response Modification).
+
+  ICAP-Detect only supports respmod mode.
+mitigation_info_type: "url"
+launch_steps:
+- name: Run docker-compose
+  description: |
+    Requirements:
+      * Server with access to internet, with [docker installed](https://docs.docker.com/engine/install/) and [docker compose installed](https://docs.docker.com/compose/install/linux/)
+      * Generated docker-compose.yaml file
+
+    Run the following command on the server where you want to deploy
+    ```
+    docker compose up -d
+    ```

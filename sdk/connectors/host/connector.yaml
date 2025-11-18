@@ -1,0 +1,15 @@
+name: Host Connector
+description: |
+  A security agent tool to scan files and folders for malware using GLIMPS Malware Detect.
+launch_steps:
+  - name: Download Host Connector binary
+    description: |
+      Download GLIMPS Malware host binary from [this link](https://github.com/glimps-re/host-connector/releases/latest)
+  - name: Launch binary
+    description: |
+      Launch binary with connector manager url and api key specified like this:
+
+      ```bash
+      ./gmhost agent --console-url {{ .ConsoleConfig.URL }} --console-api-key {{ .ConsoleConfig.APIKey }} --console-insecure {{ .ConsoleConfig.Insecure }}
+      ```
+mitigation_info_type: "file"

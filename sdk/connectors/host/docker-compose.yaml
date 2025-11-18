@@ -1,0 +1,8 @@
+name: host
+services:
+  dummy:
+    image: gmhost
+    restart: unless-stopped
+    environment:
+      GMHOST_CONSOLE_URL: {{ .URL }}
+      GMHOST_CONSOLE_API_KEY: {{ .APIKey }}
