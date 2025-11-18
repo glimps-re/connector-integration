@@ -1,0 +1,9 @@
+name: It's a dummy connector for testing
+dev_only: true
+description: |
+  lorem ipsum
+mitigation_info_type: "file"
+launch_steps:
+  - name: Launch step 1
+    description: |
+      This is where config field are put : {{ .ConnectorConfig.DummyString }}, {{ .ConnectorConfig.DummyString2 }}

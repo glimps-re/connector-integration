@@ -1,0 +1,7 @@
+connector-manager:
+  url: https://connector-manager.com  # must be accessible to the connector
+  api-key: ...  # displayed after connector was created on connector manager
+  client-logger-level: debug  # log level of client used by the connector to interact with connector manager (one of: debug info warn error)
+
+listen: ":8000"  # port on which the connector will listen
+debug: true  # to activate debug level logs

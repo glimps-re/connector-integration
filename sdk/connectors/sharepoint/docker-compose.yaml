@@ -1,0 +1,15 @@
+services:
+  onedrive-connector:
+    image: glimpsre/onedrive-sharepoint-connector:feat-v1
+    volumes:
+      - ./config/sharepoint:/etc/glimps_connector:ro
+      - ./config/m365:/etc/m365
+    # https://docs.docker.com/reference/compose-file/services/#restart
+    restart: on-failure:3
+    # https://docs.docker.com/reference/compose-file/services/#healthcheck
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://localhost/healthz"]
+      interval: 3s
+      timeout: 3s
+      start_period: 5s
+      retries: 3

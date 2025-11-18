@@ -1,0 +1,9 @@
+config:
+  connector-manager:
+    url: http://backend
+    api-key: {{.APIKey}}
+    insecure: false
+
+storage:
+  annotations:
+    helm.sh/resource-policy: keep

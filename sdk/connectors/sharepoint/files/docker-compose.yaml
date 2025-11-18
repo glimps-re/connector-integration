@@ -1,0 +1,9 @@
+services:
+  sharepoint-connector:
+    image: glimpsre/onedrive-sharepoint-connector:feat-add_console
+    container_name: sharepoint-connector
+    network_mode: host
+    volumes:
+      - ./sharepoint_conf.yml:/app/config/config.yml:ro # configuration file
+      - ./config/sharepoint:/etc/glimps_connector:ro # where bdd are stored
+    command: ["--config", "/app/config/config.yml"]

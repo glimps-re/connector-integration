@@ -1,0 +1,40 @@
+name: glimpsmail
+
+services:
+  m365-connector:
+    image: glimpsre/m365-connector:v0.3.2
+    restart: unless-stopped
+    volumes:
+      - ./m365/:/etc/m365:ro
+    environment:
+      TZ: Europe/Paris
+      M365_CONSOLE_URL: {{ .URL }}
+      M365_CONSOLE_API_KEY: {{ .APIKey }}
+    healthcheck:
+      test: netstat -tnlp |grep -qE ':80.*m365-connector'
+      interval: "10s"
+      timeout: "3s"
+      start_period: "10s"
+      retries: 6
+
+  smtprelay:
+    image: glimpsre/smtprelay:v3.6.0
+    restart: unless-stopped
+    volumes:
+      - ./smtprelay/:/etc/smtprelay:ro
+      - ./certs/:/etc/smtprelay/certs:ro
+    environment:
+      TZ: Europe/Paris
+      SMTP_CONSOLE_URL: {{ .URL }}
+      SMTP_CONSOLE_API_KEY: {{ .APIKey }}
+    healthcheck:
+      test: netstat -tnlp |grep -qE ':25.*smtprelay'
+      interval: "10s"
+      timeout: "3s"
+      start_period: "10s"
+      retries: 6
+    ports:
+      - 25:25
+    depends_on:
+      m365:
+        condition: service_healthy

@@ -1,0 +1,87 @@
+name: M365 (with smtprelay)
+dev_only: true
+description: |
+  lorem ipsum
+mitigation_info_type: "email"
+setup_steps:
+  - name: App Registration creation requirements
+    description: |
+      Requirements:
+        * Powershell Version > 7
+        * Azure account with one of these roles: Application Developer, Application Administrator, Global Administrator
+      Download the following PowerShell script, execute it and follow instructions:
+
+      ```
+      ./GLIMPS-M365-AppRegistration.ps1
+      ```
+
+      Retrieve and keep the given information, as it will be used to configure the connector.
+    files:
+      - Setup-M365-AppRegistration.ps1
+launch_steps:
+  - name: Configure Exchange server (requirements)
+    description: |
+      Requirements:
+        * Journaling email address (given by GLIMPS if you're in SaaS mode)
+        * A generated authentication token (given by GLIMPS if you're in SaaS mode)
+        * A Windows 10/11 or Windows Server 2016+ device with PowerShell 7+
+          * Or a Ubuntu/debian device with [PowerShell installed](https://learn.microsoft.com/en-us/powershell/scripting/install/install-debian?view=powershell-7.5)
+        * You need Exchange Administrator permissions (or Global Administrator)
+        * You need access to following domain: `login.microsoftonline.com`, `outlook.office365.com`, `graph.microsoft.com` and `*.powershellgallery.com`
+
+      Download the following PowerShell script.
+
+      If you're on Windows, authorize script execution:
+
+      ```
+      Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+      ```
+
+      On linux, make script executable:
+
+      ```
+      chmod +x GLIMPS-M365-Connector.ps1
+      ```
+    files:
+      - GLIMPS-M365-Connector.ps1
+  - name: Configure exchange server
+    description: |
+      Execute script using one of the following command:
+
+      For a complete deployment
+      ```
+      ./GLIMPS-M365-Connector.ps1 -TokenValue "{{ .ConnectorConfig.HeaderTokenValue }}" -JournalRecipient "{{ .ConnectorConfig.JournalRecipient }}"
+      ```
+
+      Only for some users
+      ```
+      ./GLIMPS-M365-Connector.ps1 `
+        -TokenValue "{{ .ConnectorConfig.HeaderTokenValue }}" `
+        -JournalRecipient "{{ .ConnectorConfig.JournalRecipient }}" `
+        -UserList "john.doe@company.com,jane.smith@company.com,pilot-group@company.com"
+      ```
+
+      On a server (no GUI)
+      ```
+      ./GLIMPS-M365-Connector.ps1 `
+        -TokenValue "{{ .ConnectorConfig.HeaderTokenValue }}" `
+        -JournalRecipient "{{ .ConnectorConfig.JournalRecipient }}" `
+        -NoGUI `
+        -TenantId "{{ .ConnectorConfig.M365ClientTenant }}"
+      ```
+  - name: Run docker-compose
+    description: |
+      Requirements:
+        * Server with access to internet, with [docker installed](https://docs.docker.com/engine/install/) and [docker compose installed](https://docs.docker.com/compose/install/linux/)
+        * Generated docker-compose.yaml file
+
+      Run the following command on the server where you want to deploy
+      ```
+      docker compose up -d
+how-to:
+  - name: Add custom proxy
+    description: |
+      In docker-compose, add these env variables for smtprelay service:
+      HTTP_PROXY: "http://proxy.example.com:3128"
+      HTTPS_PROXY: "https://proxy.example.com:3128"
+      NO_PROXY: "localhost, m365"

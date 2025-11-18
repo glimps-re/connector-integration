@@ -1,0 +1,9 @@
+name: dummy
+services:
+  dummy:
+    image: dummy-connector
+    restart: unless-stopped
+    environment:
+      DUMMY_CONSOLE_URL: {{ .URL }}
+      DUMMY_CONSOLE_API_KEY: {{ .APIKey }}
+      DUMMY_CONSOLE_INSECURE: {{ .Insecure }}

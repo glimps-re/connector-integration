@@ -1,0 +1,26 @@
+config:
+  connector-manager:
+    url: http://backend
+    api-key: {{.APIKey}}
+    insecure: false
+
+{{if .SharepointWebhookHost}}
+ingress:
+  enabled: true
+  className: "traefik"
+  annotations:
+    cert-manager.io/issuer: letsencrypt-prod
+  hosts:
+    - host: {{.SharepointWebhookHost}}
+      paths:
+        - path: /api
+          pathType: Prefix
+  tls:
+    - hosts:
+      - {{.SharepointWebhookHost}}
+      secretName: odsp-tls
+{{end}}
+
+storage:
+  annotations:
+    helm.sh/resource-policy: keep
