@@ -613,7 +613,6 @@ func InitDefault(connectorType string) (config any, err error) {
 			Quarantine: HostQuarantineConfig{
 				Password: "infected",
 				Location: "/var/lib/gmhost",
-				Registry: ":file::memory",
 			},
 			Monitoring: HostMonitoringConfig{
 				ModificationDelay: Duration(time.Second * 30),
@@ -622,7 +621,6 @@ func InitDefault(connectorType string) (config any, err error) {
 			ExtractWorkers: 2,
 			MaxFileSize:    "100MiB",
 			Paths:          []string{},
-			PluginsConfig:  "/opt/gmhost/plugins.conf",
 		}
 	default:
 		err = ErrInvalidConnectorType
