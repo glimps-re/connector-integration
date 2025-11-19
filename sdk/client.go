@@ -150,23 +150,22 @@ func (c ConnectorManagerClient) Start(ctx context.Context, connector Connector) 
 					taskError = fmt.Sprintf("error reconfiguring connector, error: %v\n", err)
 				}
 			case ActionStop:
-				if connector.Status() == Started {
-					err := connector.Stop(ctx)
-					if err != nil {
-						taskError = fmt.Sprintf("error stopping connector, error: %v\n", err)
-					}
-				} else {
+				if connector.Status() == Stopped {
 					taskError = "error stopping connector, error: connector is already stopped"
+					break
+				}
+				err := connector.Stop(ctx)
+				if err != nil {
+					taskError = fmt.Sprintf("error stopping connector, error: %v\n", err)
 				}
 			case ActionStart:
-				if connector.Status() == Stopped {
-					// TODO not sure we should do this
-					err := connector.Start(ctx)
-					if err != nil {
-						taskError = fmt.Sprintf("error start connector, error: %s", err)
-					}
-				} else {
-					taskError = "error stopping connector, error: connector is already started"
+				if connector.Status() == Started {
+					taskError = "error starting connector, error: connector is already started"
+					break
+				}
+				err := connector.Start(ctx)
+				if err != nil {
+					taskError = fmt.Sprintf("error start connector, error: %s", err)
 				}
 			case ActionRestore:
 				restoreAction := new(RestoreActionContent)
