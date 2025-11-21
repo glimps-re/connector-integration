@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.6.4] 
+
+### Added
+
+* Console logger handle log attributes and groups
+
 ## [v0.6.3]
 
 ## Fixes
