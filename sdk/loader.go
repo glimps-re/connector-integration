@@ -128,7 +128,6 @@ type ConfigFieldType string
 
 const (
 	Number      ConfigFieldType = "number"
-	Integer     ConfigFieldType = "integer"
 	String      ConfigFieldType = "string"
 	StringArray ConfigFieldType = "string[]"
 	Boolean     ConfigFieldType = "boolean"
@@ -598,8 +597,8 @@ func InitDefault(connectorType string) (config any, err error) {
 				GroupsToMonitorWithInitialScan:    []string{},
 				SitesToIgnore:                     []string{},
 				GroupsToIgnore:                    []string{},
-				AlertingToAdmins:                  []string{},
-				AlertingToClients:                 []string{},
+				ExcludeDirs:                       []string{},
+				ExcludeFiles:                      []string{},
 			},
 		}
 	case HostKey:

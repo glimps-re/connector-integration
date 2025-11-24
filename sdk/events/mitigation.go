@@ -18,19 +18,18 @@ type MitigationEvent struct {
 
 	ElementID string           `json:"element_id" validate:"required"`
 	Reason    MitigationReason `json:"reason"`
-	// ClientName string `json:"client-name" desc:"required for certain connectors (e.g. sharepoint)"`
-	Info any `json:"info"`
+	Info      any              `json:"info"`
 }
 
 // Define mitigation action
 type MitigationAction string
 
 const (
-	// threat has been stored in quarantine
+	// threat has been moved to quarantine
 	ActionQuarantine MitigationAction = "quarantine"
-	// threat has been block without quarantine
+	// threat has been blocked without quarantine
 	ActionBlock MitigationAction = "block"
-	// threat has been remove without quarantine
+	// threat has been removed without quarantine
 	ActionRemove MitigationAction = "remove"
 	// a log message has been produced to warn about threat
 	ActionLog MitigationAction = "log"
@@ -64,7 +63,7 @@ const (
 
 type CommonDetails struct {
 	Malwares           []string `json:"malwares"`
-	GmalwareURLs       []string `json:"gmalware_urls"`
+	GmalwareURLs       []string `json:"gmalware_urls" desc:"urls to view analysis results"`
 	QuarantineLocation string   `json:"quarantine_location"`
 }
 

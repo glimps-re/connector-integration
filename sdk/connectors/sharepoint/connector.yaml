@@ -57,9 +57,6 @@ setup_steps:
       After clicking on "Submit", several information will be printed, including an API key and the connector manager URL, which are both necessary to deploy the connector. **They must be saved because they won't be shown again**.
       To deploy connector, a documentation is available in connector Actions > Configure.
 
-
-config_fields:
-
 launch_steps:
   - name: Deploy via docker compose
     description: |

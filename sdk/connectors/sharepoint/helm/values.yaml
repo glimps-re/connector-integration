@@ -4,6 +4,9 @@ config:
     api-key: {{.APIKey}}
     insecure: false
 
+image:
+  version: v1.0.0-rc7
+
 {{if .SharepointWebhookHost}}
 ingress:
   enabled: true
@@ -20,6 +23,26 @@ ingress:
       - {{.SharepointWebhookHost}}
       secretName: odsp-tls
 {{end}}
+
+livenessProbe:
+  failureThreshold: 12
+  httpGet:
+    path: /healthz
+    port: http
+    scheme: HTTP
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 3
+
+readinessProbe:
+  failureThreshold: 6
+  httpGet:
+    path: /ready
+    port: http
+    scheme: HTTP
+  periodSeconds: 20
+  successThreshold: 1
+  timeoutSeconds: 3
 
 storage:
   annotations:
