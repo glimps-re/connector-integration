@@ -27,11 +27,11 @@ type ReconfigurableSharepointConfig struct {
 
 	MitigationAction SPMitigationActions `json:"mitigation_action" mapstructure:"mitigation_action" validate:"required" desc:"Action to perform when a file is detected as malware (only one can be selected)"`
 
-	MaxUploadSize string `json:"max_upload_size" desc:"Maximum file size to send to Detect (format as: 100MB). Files above that limit will not be analyzed and an alert will be raised. Default value is 100MB"`
+	MaxUploadSize string `json:"max_upload_size" desc:"Maximum file size to send to Detect (format as: 100MB). Files above that limit will not be analyzed and an alert will be raised."`
 
-	RetryFrequency string `json:"retry_frequency" desc:"Frequency to try/retry submitting files that were rejected due to reached quotas. Has a default value if left empty"`
+	RetryFrequency Duration `json:"retry_frequency" desc:"Frequency to try/retry submitting files that were rejected due to reached quotas."`
 
-	MonitoringFrequency string `json:"monitoring_frequency" desc:"Frequency to analyze changes on monitored drives (independently of webhook notifications) (format: 10m). Default value is 10m."`
+	MonitoringFrequency Duration `json:"monitoring_frequency" desc:"Frequency to analyze changes on monitored drives (independently of webhook notifications) (format: 10m)."`
 
 	QuarantineURL                        string `json:"quarantine_url" validate:"omitempty,url" desc:"URL of the sharepoint site that will be used as quarantine"`
 	QuarantineLibName                    string `json:"quarantine_lib_name" desc:"Library name to use inside the quarantine site. If not provided, default library is used (usually named 'Documents')"`
@@ -51,8 +51,10 @@ type ReconfigurableSharepointConfig struct {
 	SitesToIgnore  []string `json:"sites_to_ignore" validate:"dive,url" desc:"Sites to not monitor when scope is MonitorAll (format: 'https://mySharepoint.com/sites/mySite')"`
 	GroupsToIgnore []string `json:"groups_to_ignore" validate:"dive" desc:"Groups to not monitor when scope is MonitorAll (group names, e.g. 'myGroup')"`
 
-	ExcludeDirs  []string `json:"exclude_dirs" desc:"Directories to exclude from analysis. MUST respect following format (complicated, will change in future version): siteName;;;libName;;;/full/path/to/exclude;;;[listOfExtensions] Example: https://myTenant.sharepoint.com/sites/mySite;;;Documents;;;/folder1/folder2;;;[.exe,.txt] [list-of-extensions] is optional, put [] if you want all files to be skipped in that dir, no matter the extension"`
+	ExcludeDirs  []string `json:"exclude_dirs" desc:"Directories to exclude from analysis. MUST respect following format (complicated, will change in future version): siteURL;;;libName;;;/full/path/to/exclude;;;[listOfExtensions] Example: https://myTenant.sharepoint.com/sites/mySite;;;Documents;;;/folder1/folder2;;;[.exe,.txt] [list-of-extensions] is optional, put [] if you want all files to be skipped in that dir, no matter the extension"`
 	ExcludeFiles []string `json:"exclude_files" desc:"Files to exclude from analysis. MUST respect following format: siteName;;;libName;;;/full/path/to/file/myFile.txt Example: https://myTenant.sharepoint.com/sites/mySite;;;Documents;;;/folder1/folder2/myFile.txt"`
+
+	TimeoutFactor int `json:"timeout_factor" mapstructure:"timeout-factor" validate:"min=1" desc:"Optional factor to increase timeouts (if set, must be an integer >= 1). 1 to use default timeouts values"`
 }
 
 type SPMitigationActions struct {
