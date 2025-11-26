@@ -10,7 +10,7 @@ type M365Config struct {
 	SetLegitCategory             bool   `json:"set_legit_category" desc:"Whether to add a legit label to mail identified as safe"`
 	M365ClientID                 string `json:"m365_client_id" validate:"required" desc:"M365 App Registration Tenant Client ID"`
 	M365ClientTenant             string `json:"m365_client_tenant" validate:"required" desc:"M365 App Registration Tenant Name"`
-	M365ClientSecret             string `json:"m365_client_secret,omitempty" validate:"required" desc:"M365 App Registration generated secret key"`
+	M365ClientSecret             string `json:"m365_client_secret,omitempty" password:"true" validate:"required" desc:"M365 App Registration generated secret key"`
 	HeaderTokenValue             string `json:"header_token_value" validate:"required" desc:"Mail header value set by an exchange rule for mail sent to journaling rule address, to authenticate"`
 }
 

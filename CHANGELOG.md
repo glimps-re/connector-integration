@@ -1,5 +1,17 @@
 # Changelog
 
+## [v0.1.2] - 26/11/2025
+
+### Fixed
+
+* password config field
+
+## [v0.1.1] - 19/11/2025
+
+### Fixed
+
+* log message when connector is already started
+
 ## [v0.1.0] - 19/11/2025
 
 ### Added

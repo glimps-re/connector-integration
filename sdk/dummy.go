@@ -1,16 +1,14 @@
 package sdk
 
 type DummyConfig struct {
-	CommonConnectorConfig
-	DummyString  string `json:"dummy_string" validate:"required" `
+	ReconfigurableDummyConfig
 	DummyString2 string `json:"dummy_string_2" reconfigurable:"false"` // non-reconfigurable field used in TU
-	Password     string `json:"password,omitempty"`
 }
 
 type ReconfigurableDummyConfig struct {
 	CommonConnectorConfig
 	DummyString string `json:"dummy_string" validate:"required" `
-	Password    string `json:"password"`
+	Password    string `json:"password,omitempty" password:"true"`
 }
 
 type DummyHelmConf struct {
