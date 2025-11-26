@@ -150,11 +150,13 @@ func TestConnectorsTypesLoader_GetTemplatedLaunchSteps(t *testing.T) {
 			args: args{
 				config: LaunchStepConfig{
 					ConnectorConfig: DummyConfig{
-						CommonConnectorConfig: CommonConnectorConfig{
-							GMalwareAPIURL:   "toto",
-							GMalwareAPIToken: "totoken",
+						ReconfigurableDummyConfig: ReconfigurableDummyConfig{
+							CommonConnectorConfig: CommonConnectorConfig{
+								GMalwareAPIURL:   "toto",
+								GMalwareAPIToken: "totoken",
+							},
+							DummyString: "test",
 						},
-						DummyString: "test",
 					},
 				},
 				connectorType: DummyKey,
@@ -384,17 +386,17 @@ func TestConnectorTypeLoader_GetTemplatedHelm(t *testing.T) {
 }
 
 func Test_getConfigFields(t *testing.T) {
-	// define mock struct here so its const
-	type TestCommonConnectorConfig struct { // must be exported to be used in testSharepointConfig
+	type TestCommonConnectorConfig struct {
 		ClientName          string   `json:"client_name" validate:"required" desc:"Name of the client"`
 		GMalwareAPIURL      string   `json:"gmalware_api_url" validate:"required,url" desc:"GLIMPS Malware API URL"`
 		GMalwareAPIToken    string   `json:"gmalware_api_token" validate:"required" desc:"GLIMPS Malware API Token"`
 		GMalwareNoCertCheck bool     `json:"gmalware_no_cert_check" desc:"Disable certificate check for GLIMPS Malware"`
 		GMalwareUserTags    []string `json:"gmalware_user_tags" desc:"List of tags set by connector on GLIMPS Malware detect submission"`
 		OtherField          int      `json:"other_field" desc:"Just another field" reconfigurable:"false"`
+		SecretField         string   `json:"secret_field" password:"true" desc:"Just another field" reconfigurable:"false"`
 		Duration            Duration `json:"duration" desc:"It's a duration"`
 	}
-	type testWithSubconf struct { // must be exported to be used in testSharepointConfig
+	type testWithSubconf struct {
 		TestCommonConnectorConfig
 		OtherFieldAgain int `json:"other_field_again" desc:"oh, another field"`
 	}
@@ -472,6 +474,16 @@ func Test_getConfigFields(t *testing.T) {
 					DefaultValue: 0,
 				},
 				{
+					Name:         "SecretField",
+					Key:          "secret_field",
+					Type:         "string",
+					Description:  "Just another field",
+					Validation:   []FrontValidation{},
+					Properties:   []ConfigField{},
+					DefaultValue: string(""),
+					Password:     true,
+				},
+				{
 					Name:           "Duration",
 					Key:            "duration",
 					Type:           "string",
@@ -545,6 +557,16 @@ func Test_getConfigFields(t *testing.T) {
 					Description:  "Just another field",
 					Validation:   []FrontValidation{},
 					DefaultValue: 0,
+				},
+				{
+					Name:         "SecretField",
+					Key:          "secret_field",
+					Type:         "string",
+					Description:  "Just another field",
+					Validation:   []FrontValidation{},
+					Properties:   []ConfigField{},
+					DefaultValue: string(""),
+					Password:     true,
 				},
 				{
 					Name:           "Duration",

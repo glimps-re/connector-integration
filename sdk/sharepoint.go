@@ -20,7 +20,7 @@ type ReconfigurableSharepointConfig struct {
 	ClientName       string `json:"client_name" desc:"client name, used to restore quarantine"`
 	M365TenantID     string `json:"m365_tenant_id" validate:"required" desc:"Tenant ID"`
 	M365ClientID     string `json:"m365_client_id" validate:"required" desc:"M365 app registration client ID"`
-	M365ClientSecret string `json:"m365_client_secret,omitempty" validate:"required" desc:"M365 app registration client secret"`
+	M365ClientSecret string `json:"m365_client_secret,omitempty" password:"true" validate:"required" desc:"M365 app registration client secret"`
 
 	WebhookURL string `json:"webhook_url" validate:"omitempty,url,startswith=https" desc:"URL where microsoft will send webhook notifications (technically to webhook-url/api/v1). it must be publicly available and serve on https. Leave empty to not use real-time monitoring."`
 

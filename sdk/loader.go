@@ -15,6 +15,7 @@ import (
 	"reflect"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -109,6 +110,7 @@ const (
 	FrontValidFileSize FrontValidation = "filesize"
 
 	ReconfigurableTag string = "reconfigurable"
+	PasswordTag       string = "password"
 )
 
 // Infos for the frontend
@@ -122,6 +124,7 @@ type ConfigField struct {
 	Reconfigurable bool              `json:"reconfigurable" desc:"true to allow field update (=reconfiguration) (false => user will only be able to see current value)."`
 	Properties     []ConfigField     `json:"properties"`
 	DefaultValue   any               `json:"default_value"`
+	Password       bool              `json:"password"`
 }
 
 type ConfigFieldType string
@@ -525,6 +528,11 @@ func getConfigFields(config any) (configFields []ConfigField, err error) {
 
 		fieldDesc, _ := field.Tag.Lookup("desc")
 
+		password := false
+		if fieldPassword, ok := field.Tag.Lookup(PasswordTag); ok {
+			password, _ = strconv.ParseBool(fieldPassword) // if tag is badly filled, considered as non-password
+		}
+
 		required := false
 		validation := []FrontValidation{}
 		if validate, ok := field.Tag.Lookup("validate"); ok {
@@ -563,6 +571,7 @@ func getConfigFields(config any) (configFields []ConfigField, err error) {
 			Reconfigurable: reconfigurable,
 			Properties:     subFields,
 			DefaultValue:   defaultValue,
+			Password:       password,
 		})
 	}
 	return
@@ -582,7 +591,9 @@ func InitDefault(connectorType string) (config any, err error) {
 		}
 	case DummyKey:
 		config = &DummyConfig{
-			CommonConnectorConfig: defaultCommonConfig,
+			ReconfigurableDummyConfig: ReconfigurableDummyConfig{
+				CommonConnectorConfig: defaultCommonConfig,
+			},
 		}
 	case ICAPKey:
 		config = &ICAPConfig{
