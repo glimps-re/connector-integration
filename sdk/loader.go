@@ -108,6 +108,7 @@ const (
 	FrontValidDuration FrontValidation = "duration"
 	FrontValidFileSize FrontValidation = "filesize"
 
+	EnumTag           string = "enum"
 	ReconfigurableTag string = "reconfigurable"
 )
 
@@ -122,6 +123,7 @@ type ConfigField struct {
 	Reconfigurable bool              `json:"reconfigurable" desc:"true to allow field update (=reconfiguration) (false => user will only be able to see current value)."`
 	Properties     []ConfigField     `json:"properties"`
 	DefaultValue   any               `json:"default_value"`
+	Enum           []string          `json:"enum,omitempty" desc:"enumeration possible values."`
 }
 
 type ConfigFieldType string
@@ -547,6 +549,13 @@ func getConfigFields(config any) (configFields []ConfigField, err error) {
 			}
 		}
 
+		var enumValues []string
+		if enumTag, ok := field.Tag.Lookup(EnumTag); ok && enumTag != "" {
+			for v := range strings.SplitSeq(enumTag, ",") {
+				enumValues = append(enumValues, strings.TrimSpace(v))
+			}
+		}
+
 		reconfigurable := true // consider all fields reconfigurable by default
 		reconfigurableStr, ok := field.Tag.Lookup(ReconfigurableTag)
 		if ok && reconfigurableStr == "false" {
@@ -563,6 +572,7 @@ func getConfigFields(config any) (configFields []ConfigField, err error) {
 			Reconfigurable: reconfigurable,
 			Properties:     subFields,
 			DefaultValue:   defaultValue,
+			Enum:           enumValues,
 		})
 	}
 	return
