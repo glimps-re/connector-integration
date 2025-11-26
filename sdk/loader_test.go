@@ -385,7 +385,7 @@ func TestConnectorTypeLoader_GetTemplatedHelm(t *testing.T) {
 
 func Test_getConfigFields(t *testing.T) {
 	// define mock struct here so its const
-	type TestCommonConnectorConfig struct { // must be exported to be used in testSharepointConfig
+	type TestCommonConnectorConfig struct {
 		ClientName          string   `json:"client_name" validate:"required" desc:"Name of the client"`
 		GMalwareAPIURL      string   `json:"gmalware_api_url" validate:"required,url" desc:"GLIMPS Malware API URL"`
 		GMalwareAPIToken    string   `json:"gmalware_api_token" validate:"required" desc:"GLIMPS Malware API Token"`
@@ -394,9 +394,19 @@ func Test_getConfigFields(t *testing.T) {
 		OtherField          int      `json:"other_field" desc:"Just another field" reconfigurable:"false"`
 		Duration            Duration `json:"duration" desc:"It's a duration"`
 	}
-	type testWithSubconf struct { // must be exported to be used in testSharepointConfig
+	type testWithSubconf struct {
 		TestCommonConnectorConfig
 		OtherFieldAgain int `json:"other_field_again" desc:"oh, another field"`
+	}
+	type testWithEnum struct {
+		ClientName       string `json:"client_name" validate:"required" desc:"Name of the client"`
+		MitigationAction string `json:"mitigation_action" mapstructure:"mitigation_action" enum:"quarantine,delete,log" validate:"required,oneof=quarantine delete log" desc:"Action to perform when a file is detected as malware."`
+	}
+	type testWithEnumSpaces struct {
+		Action string `json:"action" enum:"opt1, opt2 , opt3" desc:"Enum with spaces"`
+	}
+	type testWithEmptyEnum struct {
+		Action string `json:"action" enum:"" desc:"Empty enum tag"`
 	}
 	type args struct {
 		config any
@@ -563,6 +573,71 @@ func Test_getConfigFields(t *testing.T) {
 					Validation:     []FrontValidation{},
 					Reconfigurable: true,
 					DefaultValue:   0,
+				},
+			},
+		},
+		{
+			name: "ok enum",
+			args: args{
+				config: testWithEnum{},
+			},
+			wantConfigFields: []ConfigField{
+				{
+					Name:           "ClientName",
+					Key:            "client_name",
+					Type:           "string",
+					Description:    "Name of the client",
+					Required:       true,
+					Validation:     []FrontValidation{},
+					Reconfigurable: true,
+					DefaultValue:   "",
+				},
+				{
+					Name:           "MitigationAction",
+					Key:            "mitigation_action",
+					Type:           "string",
+					Description:    "Action to perform when a file is detected as malware.",
+					Required:       true,
+					Validation:     []FrontValidation{},
+					Reconfigurable: true,
+					DefaultValue:   "",
+					Enum:           []string{"quarantine", "delete", "log"},
+				},
+			},
+		},
+		{
+			name: "ok enum with spaces trimmed",
+			args: args{
+				config: testWithEnumSpaces{},
+			},
+			wantConfigFields: []ConfigField{
+				{
+					Name:           "Action",
+					Key:            "action",
+					Type:           "string",
+					Description:    "Enum with spaces",
+					Validation:     []FrontValidation{},
+					Reconfigurable: true,
+					DefaultValue:   "",
+					Enum:           []string{"opt1", "opt2", "opt3"},
+				},
+			},
+		},
+		{
+			name: "ok empty enum tag",
+			args: args{
+				config: testWithEmptyEnum{},
+			},
+			wantConfigFields: []ConfigField{
+				{
+					Name:           "Action",
+					Key:            "action",
+					Type:           "string",
+					Description:    "Empty enum tag",
+					Validation:     []FrontValidation{},
+					Reconfigurable: true,
+					DefaultValue:   "",
+					Enum:           nil,
 				},
 			},
 		},
