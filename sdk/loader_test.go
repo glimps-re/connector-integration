@@ -400,6 +400,11 @@ func Test_getConfigFields(t *testing.T) {
 		TestCommonConnectorConfig
 		OtherFieldAgain int `json:"other_field_again" desc:"oh, another field"`
 	}
+	type testWithEnum struct {
+		NotEnum        string `json:"not_enum" validate:"required" desc:"Field without enum (no oneof)"`
+		Enum           string `json:"mitigation_action" mapstructure:"mitigation_action" validate:"required,oneof=quarantine delete log" desc:"Action to perform when a file is detected as malware."`
+		EnumWithSpaces string `json:"enum_with_spaces" validate:"oneof=opt1  opt2   opt3" desc:"Enum with spaces"`
+	}
 	type args struct {
 		config any
 	}
@@ -585,6 +590,46 @@ func Test_getConfigFields(t *testing.T) {
 					Validation:     []FrontValidation{},
 					Reconfigurable: true,
 					DefaultValue:   0,
+				},
+			},
+		},
+		{
+			name: "ok with enum",
+			args: args{
+				config: testWithEnum{},
+			},
+			wantConfigFields: []ConfigField{
+				{
+					Name:           "NotEnum",
+					Key:            "not_enum",
+					Type:           "string",
+					Description:    "Field without enum (no oneof)",
+					Required:       true,
+					Validation:     []FrontValidation{},
+					Reconfigurable: true,
+					DefaultValue:   "",
+					Enum:           nil,
+				},
+				{
+					Name:           "Enum",
+					Key:            "mitigation_action",
+					Type:           "string",
+					Description:    "Action to perform when a file is detected as malware.",
+					Required:       true,
+					Validation:     []FrontValidation{},
+					Reconfigurable: true,
+					DefaultValue:   "",
+					Enum:           []string{"quarantine", "delete", "log"},
+				},
+				{
+					Name:           "EnumWithSpaces",
+					Key:            "enum_with_spaces",
+					Type:           "string",
+					Description:    "Enum with spaces",
+					Validation:     []FrontValidation{},
+					Reconfigurable: true,
+					DefaultValue:   "",
+					Enum:           []string{"opt1", "opt2", "opt3"},
 				},
 			},
 		},
