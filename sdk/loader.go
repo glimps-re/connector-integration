@@ -125,6 +125,7 @@ type ConfigField struct {
 	Properties     []ConfigField     `json:"properties"`
 	DefaultValue   any               `json:"default_value"`
 	Password       bool              `json:"password"`
+	Enum           []string          `json:"enum,omitempty" desc:"enumeration possible values."`
 }
 
 type ConfigFieldType string
@@ -535,16 +536,22 @@ func getConfigFields(config any) (configFields []ConfigField, err error) {
 
 		required := false
 		validation := []FrontValidation{}
+		var enumValues []string
 		if validate, ok := field.Tag.Lookup("validate"); ok {
 			rules := strings.SplitSeq(validate, ",")
 			for rule := range rules {
-				switch rule {
-				case "required":
+				switch {
+				case rule == "required":
 					required = true
-				case "url":
+				case rule == "url":
 					validation = append(validation, FrontValidURL)
-				case "email":
+				case rule == "email":
 					validation = append(validation, FrontValidEmail)
+				case strings.HasPrefix(rule, "oneof="):
+					parts := strings.SplitN(rule, "=", 2)
+					if len(parts) == 2 && parts[1] != "" {
+						enumValues = strings.Fields(parts[1])
+					}
 
 					// to add when available in our custom validator :
 					// case "duration":
@@ -572,6 +579,7 @@ func getConfigFields(config any) (configFields []ConfigField, err error) {
 			Properties:     subFields,
 			DefaultValue:   defaultValue,
 			Password:       password,
+			Enum:           enumValues,
 		})
 	}
 	return
