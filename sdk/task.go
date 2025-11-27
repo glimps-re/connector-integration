@@ -28,8 +28,7 @@ const (
 )
 
 type RestoreActionContent struct {
-	ID         string `json:"id" desc:"required"`
-	ClientName string `json:"client-name,omitempty" desc:"required for certain connectors (e.g. sharepoint)"`
+	ID string `json:"id" desc:"required"`
 }
 
 func (t Task) Status() string {
