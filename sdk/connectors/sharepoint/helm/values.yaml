@@ -5,7 +5,7 @@ config:
     insecure: false
 
 image:
-  version: v1.0.0-rc7
+  version: v1.0.0-rc9
 
 {{if .SharepointWebhookHost}}
 ingress:
