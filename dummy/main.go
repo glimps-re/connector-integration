@@ -134,7 +134,7 @@ func (d *DummyConnector) Launch(ctx context.Context) {
 						Malwares:     []string{"test malware"},
 						GmalwareURLs: []string{"fake.test.local"},
 					},
-					Filename: "test.tst",
+					File:     "test.tst",
 					Filetype: "tst",
 				})
 				if err != nil {
