@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.2.0] - 21/11/2025
+
+### Added
+
+* Console logger handle log attributes and groups
+
 ## [v0.1.2] - 26/11/2025
 
 ### Fixed
@@ -17,4 +23,3 @@
 ### Added
 
 * Init with ICAP, SharePoint, Host, M365 (dev only)
-
