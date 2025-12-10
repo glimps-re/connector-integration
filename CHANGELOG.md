@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.3.0] - 12/12/2025
+
+### Added
+
+* Array object type in connectors config fields
+
 ## [v0.2.0] - 12/12/2025
 
 ### Added
