@@ -117,7 +117,7 @@ const (
 type ConfigField struct {
 	Name           string            `json:"name" desc:"display name"`
 	Key            string            `json:"key"`
-	Type           ConfigFieldType   `json:"type" desc:"front type. either: boolean,string,number,string[],object"`
+	Type           ConfigFieldType   `json:"type" desc:"front type. either: boolean,string,number,string[],object,object[]"`
 	Description    string            `json:"description"`
 	Required       bool              `json:"required"`
 	Validation     []FrontValidation `json:"validation" desc:"to perform specific types of validation"`
@@ -136,6 +136,7 @@ const (
 	StringArray ConfigFieldType = "string[]"
 	Boolean     ConfigFieldType = "boolean"
 	Object      ConfigFieldType = "object"
+	ObjectArray ConfigFieldType = "object[]"
 )
 
 // These configs should contain directly a list of fields (no nested struct) whose name
@@ -492,12 +493,24 @@ func getConfigFields(config any) (configFields []ConfigField, err error) {
 			fieldType = Number
 
 		case reflect.Slice:
-			if field.Type.Elem().Kind() == reflect.String {
+			switch field.Type.Elem().Kind() {
+			case reflect.String:
 				fieldType = StringArray
-				break
+			case reflect.Struct:
+				fieldType = ObjectArray
+				// create a zero instance to extract it's subfields (to not directly pass an array)
+				elemType := field.Type.Elem()
+				zeroElem := reflect.New(elemType).Elem().Interface()
+				subConfigFields, subErr := getConfigFields(zeroElem)
+				if subErr != nil {
+					err = subErr
+					return
+				}
+				subFields = subConfigFields
+			default:
+				err = ErrBadConfigFieldStruct
+				return
 			}
-			err = ErrBadConfigFieldStruct
-			return
 
 		case reflect.Struct:
 			subConfigFields, subErr := getConfigFields(reflect.ValueOf(config).Field(i).Interface())
@@ -600,6 +613,7 @@ func InitDefault(connectorType string) (config any, err error) {
 		config = &DummyConfig{
 			ReconfigurableDummyConfig: ReconfigurableDummyConfig{
 				CommonConnectorConfig: defaultCommonConfig,
+				Objects:               []DummyObject{},
 			},
 		}
 	case ICAPKey:

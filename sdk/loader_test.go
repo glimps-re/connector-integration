@@ -405,6 +405,24 @@ func Test_getConfigFields(t *testing.T) {
 		Enum           string `json:"mitigation_action" mapstructure:"mitigation_action" validate:"required,oneof=quarantine delete log" desc:"Action to perform when a file is detected as malware."`
 		EnumWithSpaces string `json:"enum_with_spaces" validate:"oneof=opt1  opt2   opt3" desc:"Enum with spaces"`
 	}
+	type testNestedObject struct {
+		Field1 string `json:"field_1" desc:"Nested field 1"`
+		Field2 string `json:"field_2" desc:"Nested field 2"`
+	}
+	type testSubObject struct {
+		SubField1   string             `json:"sub_field_1" desc:"Sub field 1"`
+		SubField2   int                `json:"sub_field_2" desc:"Sub field 2"`
+		Tags        []string           `json:"tags" desc:"List of tags"`
+		NestedItems []testNestedObject `json:"nested_items" desc:"Nested objects"`
+	}
+	type testWithObjectArray struct {
+		Name    string          `json:"name" desc:"Name field"`
+		Objects []testSubObject `json:"objects" desc:"Array of objects"`
+	}
+	type testWithUnsupportedSlice struct {
+		Name    string `json:"name" desc:"Name field"`
+		Numbers []int  `json:"numbers" desc:"Array of integers"`
+	}
 	type args struct {
 		config any
 	}
@@ -414,6 +432,13 @@ func Test_getConfigFields(t *testing.T) {
 		wantConfigFields []ConfigField
 		wantErr          bool
 	}{
+		{
+			name: "error with unsupported slice type",
+			args: args{
+				config: testWithUnsupportedSlice{},
+			},
+			wantErr: true,
+		},
 		{
 			name: "common config",
 			args: args{
@@ -633,12 +658,99 @@ func Test_getConfigFields(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "ok with object array",
+			args: args{
+				config: testWithObjectArray{},
+			},
+			wantConfigFields: []ConfigField{
+				{
+					Name:           "Name",
+					Key:            "name",
+					Type:           "string",
+					Description:    "Name field",
+					Validation:     []FrontValidation{},
+					Reconfigurable: true,
+					DefaultValue:   "",
+				},
+				{
+					Name:           "Objects",
+					Key:            "objects",
+					Type:           "object[]",
+					Description:    "Array of objects",
+					Validation:     []FrontValidation{},
+					Reconfigurable: true,
+					DefaultValue:   []testSubObject{},
+					Properties: []ConfigField{
+						{
+							Name:           "SubField1",
+							Key:            "sub_field_1",
+							Type:           "string",
+							Description:    "Sub field 1",
+							Validation:     []FrontValidation{},
+							Reconfigurable: true,
+							DefaultValue:   "",
+						},
+						{
+							Name:           "SubField2",
+							Key:            "sub_field_2",
+							Type:           "number",
+							Description:    "Sub field 2",
+							Validation:     []FrontValidation{},
+							Reconfigurable: true,
+							DefaultValue:   0,
+						},
+						{
+							Name:           "Tags",
+							Key:            "tags",
+							Type:           "string[]",
+							Description:    "List of tags",
+							Validation:     []FrontValidation{},
+							Reconfigurable: true,
+							DefaultValue:   []string{},
+						},
+						{
+							Name:           "NestedItems",
+							Key:            "nested_items",
+							Type:           "object[]",
+							Description:    "Nested objects",
+							Validation:     []FrontValidation{},
+							Reconfigurable: true,
+							DefaultValue:   []testNestedObject{},
+							Properties: []ConfigField{
+								{
+									Name:           "Field1",
+									Key:            "field_1",
+									Type:           "string",
+									Description:    "Nested field 1",
+									Validation:     []FrontValidation{},
+									Reconfigurable: true,
+									DefaultValue:   "",
+								},
+								{
+									Name:           "Field2",
+									Key:            "field_2",
+									Type:           "string",
+									Description:    "Nested field 2",
+									Validation:     []FrontValidation{},
+									Reconfigurable: true,
+									DefaultValue:   "",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			configFields, err := getConfigFields(tt.args.config)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getConfigFields() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err != nil {
 				return
 			}
 
