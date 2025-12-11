@@ -51,6 +51,8 @@ const (
 	ReasonTooBig MitigationReason = "toobig"
 	// Used if file's type triggers mitigation
 	ReasonFileType MitigationReason = "filetype"
+	// Used if file's path triggers mitigation
+	ReasonFilePath MitigationReason = "filepath"
 )
 
 type MitigationInfoType string
