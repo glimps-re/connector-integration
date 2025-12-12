@@ -53,6 +53,8 @@ type ReconfigurableSharepointConfig struct {
 
 	ExcludeDirs  []string `json:"exclude_dirs" desc:"Directories to exclude from analysis. MUST respect following format (complicated, will change in future version): siteName;;;libName;;;/full/path/to/exclude;;;[listOfExtensions] Example: https://myTenant.sharepoint.com/sites/mySite;;;Documents;;;/folder1/folder2;;;[.exe,.txt] [list-of-extensions] is optional, put [] if you want all files to be skipped in that dir, no matter the extension"`
 	ExcludeFiles []string `json:"exclude_files" desc:"Files to exclude from analysis. MUST respect following format: siteName;;;libName;;;/full/path/to/file/myFile.txt Example: https://myTenant.sharepoint.com/sites/mySite;;;Documents;;;/folder1/folder2/myFile.txt"`
+
+	TimeoutFactor int `json:"timeout_factor" mapstructure:"timeout-factor" validate:"min=1" desc:"Optional factor to increase timeouts (if set, must be an integer >= 1). Leave empty to use default timeouts values"`
 }
 
 type SPMitigationActions struct {
