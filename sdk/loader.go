@@ -650,10 +650,13 @@ func InitDefault(connectorType string) (config any, err error) {
 			Monitoring: HostMonitoringConfig{
 				ModificationDelay: Duration(time.Second * 30),
 			},
-			Workers:        4,
-			ExtractWorkers: 2,
-			MaxFileSize:    "100MiB",
-			Paths:          []string{},
+			Workers:                  4,
+			ExtractWorkers:           2,
+			MaxFileSize:              "100MiB",
+			RecursiveExtractMaxDepth: 10,
+			RecursiveExtractMaxSize:  "5GB",
+			RecursiveExtractMaxFiles: 10000,
+			Paths:                    []string{},
 		}
 	default:
 		err = ErrInvalidConnectorType

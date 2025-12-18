@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.6.1]
+
+### Added
+
+* host-connector: recursive extraction fields in config
+
 ## [v0.6.0]
 
 ### Added
