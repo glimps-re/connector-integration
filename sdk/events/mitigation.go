@@ -71,7 +71,7 @@ type CommonDetails struct {
 
 type FileInfos struct {
 	CommonDetails
-	File     string `json:"file"` // filePath + fileName
+	File     string `json:"filename"` // filePath + fileName
 	Filetype string `json:"filetype"`
 	Size     int64  `json:"size"`
 }
