@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.3.1] - 23/12/2025
+
+### Fixed
+
+* Field "file" in mitigation renamed to be displayed by front
+
 ## [v0.3.0] - 12/12/2025
 
 ### Added
