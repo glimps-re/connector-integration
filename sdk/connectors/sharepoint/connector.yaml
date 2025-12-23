@@ -15,23 +15,23 @@ setup_steps:
 
       1. **Periodic monitoring**: Regularly checks for changes in drives, using a configurable frequency.
       2. **Real-time monitoring**: Creates webhooks with Microsoft Graph API to receive notifications when changes occur in drives.
-         For it, Microsoft needs a publicly available address that serves on https.
+         Microsoft needs a publicly available address that serves on https.
 
       -> The first mode is mandatory, the second is optional.
 
-      -> These two modes are not mutually exclusive but complementary. The second mode allows for better optimization of the connector's responsiveness without querying Microsoft too often.
+      -> These two modes are not mutually exclusive but complementary. The second mode allows for better optimization of the connector's responsiveness without querying Graph API too often.
 
-      The first mode is configurable via `MonitoringFrequency`, the second via `WebhookURL`.
+      The first mode is configurable via `MonitoringFrequency`, the second via `RealTimeMonitoring` and `WebhookURL`.
 
-  - name: Choose remediation action
+  - name: Choose mitigation action
     description: |
-      You can choose between 3 actions to remediate malwares :
+      Choose action to perform on files detected as malware :
 
-      - **move file to quarantine** : see fields `QuarantineURL`, `QuarantineLibName` and `QuarantineDeleteMalwareOnMSDetection`.
-      - **permanently delete** : select `DeleteMalware`.
-      - **do nothing** : leave quarantine fields empty and unselect `DeleteMalware`.
+      - **Quarantine** : move malware files to quarantine site (requires quarantine configuration with `QuarantineURL`, `QuarantineLibName` and `QuarantineDeleteMalwareOnMSDetection`).
+      - **Delete** : permanently deletes malware files.
+      - **Log** : Log malware detections (in connector manager's logs). Files detected as malware are left untouched.
 
-      Note: only one remediation action must be defined, otherwise an error will be returned at connector start.
+      Note: only one action can (and must) be selected.
 
   - name: Choose monitoring scope
     description: |
@@ -58,23 +58,3 @@ setup_steps:
       To deploy connector, a documentation is available in connector Actions > Configure.
 
 launch_steps:
-  - name: Deploy via docker compose
-    description: |
-      (first draft version)
-
-      You can download the following docker compose and configuration file.
-      - put them in the same directory and do: `docker compose up -d`
-      - check if deployment succeeded with: `docker compose logs sharepoint-connector -f`
-
-        The first logs should say if the connector succeeded registering to connector manager.
-    files:
-      - docker-compose.yaml
-      - sharepoint_conf.yml
-
-  - name: Add new files to your OneDrive/SharePoint drives
-    description: |
-      You should now see files the connector moved to quarantine.
-
-      If you don't, check your configuration:
-      - is quarantine configured ?
-      - what is `MonitoringFrequency` value ? If it's long, it can explain why the connector did not analyze the files yet.
