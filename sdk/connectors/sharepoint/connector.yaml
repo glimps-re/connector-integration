@@ -37,24 +37,11 @@ setup_steps:
     description: |
       You can choose between two monitoring scopes :
 
-      - **Monitor All** : every drive in your tenant (for all sites & groups) will be monitored. To select this mode, leave the fields `SitesToMonitorWithoutInitialScan`, `SitesToMonitorWithInitialScan`, `GroupsToMonitorWithoutInitialScan` and `GroupsToMonitorWithInitialScan` empty.
-        You can exclude specific sites and groups with the fields `SitesToIgnore` and `GroupsToIgnore`.
-      - **Monitor Selected** : only monitor given sites and groups. To select this mode, fill the following fields : `SitesToMonitorWithoutInitialScan`, `SitesToMonitorWithInitialScan`, `GroupsToMonitorWithoutInitialScan` or `GroupsToMonitorWithInitialScan`.
+      - **Monitor All** : every drive in your tenant (for all sites & groups) will be monitored. To select this mode, select either `MonitorAllWithoutInitialScan` or `MonitorAllWithInitialScan`.
+        You can exclude specific sites or groups with the fields `SitesToIgnore` and `GroupsToIgnore`.
+      - **Monitor Selected** : only monitor given sites and groups. To select this mode, you must unselect `MonitorAllWithoutInitialScan` and `MonitorAllWithInitialScan` and fill one of the following fields : `SitesToMonitorWithoutInitialScan`, `SitesToMonitorWithInitialScan`, `GroupsToMonitorWithoutInitialScan` or `GroupsToMonitorWithInitialScan`.
 
-      Note: For **Monitor Selected** mode only, you can choose to make an 'initial scan' for some sites or groups. That means their initial content will be analyzed at connector start. Otherwise, only future changes are analyzed.
-
-  - name: Configure Alerting
-    description: |
-      If a file cannot be analyzed/remediated (example: Detect quotas reached ; error from Microsoft Graph API), an alert is sent to configured administrators and clients via email.
-      The email contains context information on why the error happened.
-      There are two types of alerts:
-      - **error**: unexpected error during the analysis/remediation process (e.g. unable to contact Detect or Microsoft API).
-      - **warning**: "expected" error (= it is normal that it does not work) (e.g. file size > Detect limit, quotas reached, empty file sent to Detect, etc.).
-      Clients receive all alerts; admins only receive error alerts (warnings configurable).
-
-  - name: Save configuration result
-    description: |
-      After clicking on "Submit", several information will be printed, including an API key and the connector manager URL, which are both necessary to deploy the connector. **They must be saved because they won't be shown again**.
-      To deploy connector, a documentation is available in connector Actions > Configure.
+      **Initial Scan**: analyze initial content at connector start. Otherwise, only new changes are analyzed.
+        How it works: for each drive to monitor, a dedicated process is started, with a limit of 20 concurrent initial scans.
 
 launch_steps:
