@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.5.0] - 12-01-2026
+
+### Added
+
+* ICAP sampling configuration parameters (threshold, head size, tail size)
+
 ## [v0.4.1] - 12-01-2026
 
 ### Fixed
