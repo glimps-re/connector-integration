@@ -130,6 +130,14 @@ func (c ConnectorManagerClient) Register(ctx context.Context, version string, in
 	return
 }
 
+func (c ConnectorManagerClient) getConfig(ctx context.Context) (config json.RawMessage, err error) {
+	err = c.call(ctx, http.MethodGet, "config", nil, &config)
+	if err != nil {
+		return
+	}
+	return
+}
+
 func (c ConnectorManagerClient) Start(ctx context.Context, connector Connector) {
 	logger.Debug("start connector")
 	tasks := c.tasks(ctx)
@@ -145,7 +153,12 @@ func (c ConnectorManagerClient) Start(ctx context.Context, connector Connector) 
 			var taskError string
 			switch task.Action {
 			case ActionUpdateConfig:
-				err := connector.Configure(ctx, task.Content)
+				config, err := c.getConfig(ctx)
+				if err != nil {
+					taskError = fmt.Sprintf("error cannot get updated config, error : %v\n", err)
+					break
+				}
+				err = connector.Configure(ctx, config)
 				if err != nil {
 					taskError = fmt.Sprintf("error reconfiguring connector, error: %v\n", err)
 				}

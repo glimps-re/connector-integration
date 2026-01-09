@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.4.0] - 09/01/2026
+
+### Changed
+
+* Need connector-manager > v0.4.0
+* UpdateConfig task do not contains config anymore. Client will fetch config from console when task is received.
+
 ## [v0.3.1] - 23/12/2025
 
 ### Fixed
