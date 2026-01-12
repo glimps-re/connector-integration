@@ -49,7 +49,7 @@ type CtxRequestIDKey struct{}
 
 type ConnectorManagerClientConfig struct {
 	URL      string `mapstructure:"url"`
-	APIKey   string `mapstructure:"api-key"` //nolint:gosec // needed to configure connector
+	APIKey   string `mapstructure:"api-key"`
 	Insecure bool   `mapstructure:"insecure"`
 }
 
