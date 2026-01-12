@@ -130,11 +130,17 @@ func (c ConnectorManagerClient) Register(ctx context.Context, version string, in
 	return
 }
 
+type getConfigResponse struct {
+	Config json.RawMessage `json:"config"`
+}
+
 func (c ConnectorManagerClient) getConfig(ctx context.Context) (config json.RawMessage, err error) {
-	err = c.call(ctx, http.MethodGet, "config", nil, &config)
+	resp := new(getConfigResponse)
+	err = c.call(ctx, http.MethodGet, "config", nil, &resp)
 	if err != nil {
 		return
 	}
+	config = resp.Config
 	return
 }
 
