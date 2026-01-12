@@ -1,6 +1,6 @@
 name: SharePoint OneDrive
 description: |
-  Monitors SharePoint/OneDrive to submit their content to GLIMPS Detect and remediate if malware is detected.
+  Monitors SharePoint/OneDrive to submit their content to GLIMPS Malware Detect and remediate if malware is detected.
 mitigation_info_type: "file"
 setup_steps:
   - name: Create App Registration
@@ -15,66 +15,33 @@ setup_steps:
 
       1. **Periodic monitoring**: Regularly checks for changes in drives, using a configurable frequency.
       2. **Real-time monitoring**: Creates webhooks with Microsoft Graph API to receive notifications when changes occur in drives.
-         For it, Microsoft needs a publicly available address that serves on https.
+         Microsoft needs a publicly available address that serves on https.
 
       -> The first mode is mandatory, the second is optional.
 
-      -> These two modes are not mutually exclusive but complementary. The second mode allows for better optimization of the connector's responsiveness without querying Microsoft too often.
+      -> These two modes are not mutually exclusive but complementary. The second mode allows for better optimization of the connector's responsiveness without querying Graph API too often.
 
-      The first mode is configurable via `MonitoringFrequency`, the second via `WebhookURL`.
+      The first mode is configurable via `MonitoringFrequency`, the second via `RealTimeMonitoring` and `WebhookURL`.
 
-  - name: Choose remediation action
+  - name: Choose mitigation action
     description: |
-      You can choose between 3 actions to remediate malwares :
+      Choose action to perform on files detected as malware :
 
-      - **move file to quarantine** : see fields `QuarantineURL`, `QuarantineLibName` and `QuarantineDeleteMalwareOnMSDetection`.
-      - **permanently delete** : select `DeleteMalware`.
-      - **do nothing** : leave quarantine fields empty and unselect `DeleteMalware`.
+      - **Quarantine** : move malware files to quarantine site (requires quarantine configuration with `QuarantineURL`, `QuarantineLibName` and `QuarantineDeleteMalwareOnMSDetection`).
+      - **Delete** : permanently deletes malware files.
+      - **Log** : Log malware detections (in connector manager's logs). Files detected as malware are left untouched.
 
-      Note: only one remediation action must be defined, otherwise an error will be returned at connector start.
+      Note: only one action can (and must) be selected.
 
   - name: Choose monitoring scope
     description: |
       You can choose between two monitoring scopes :
 
-      - **Monitor All** : every drive in your tenant (for all sites & groups) will be monitored. To select this mode, leave the fields `SitesToMonitorWithoutInitialScan`, `SitesToMonitorWithInitialScan`, `GroupsToMonitorWithoutInitialScan` and `GroupsToMonitorWithInitialScan` empty.
-        You can exclude specific sites and groups with the fields `SitesToIgnore` and `GroupsToIgnore`.
-      - **Monitor Selected** : only monitor given sites and groups. To select this mode, fill the following fields : `SitesToMonitorWithoutInitialScan`, `SitesToMonitorWithInitialScan`, `GroupsToMonitorWithoutInitialScan` or `GroupsToMonitorWithInitialScan`.
+      - **Monitor All** : every drive in your tenant (for all sites & groups) will be monitored. To select this mode, select either `MonitorAllWithoutInitialScan` or `MonitorAllWithInitialScan`.
+        You can exclude specific sites or groups with the fields `SitesToIgnore` and `GroupsToIgnore`.
+      - **Monitor Selected** : only monitor given sites and groups. To select this mode, you must unselect `MonitorAllWithoutInitialScan` and `MonitorAllWithInitialScan` and fill one of the following fields : `SitesToMonitorWithoutInitialScan`, `SitesToMonitorWithInitialScan`, `GroupsToMonitorWithoutInitialScan` or `GroupsToMonitorWithInitialScan`.
 
-      Note: For **Monitor Selected** mode only, you can choose to make an 'initial scan' for some sites or groups. That means their initial content will be analyzed at connector start. Otherwise, only future changes are analyzed.
-
-  - name: Configure Alerting
-    description: |
-      If a file cannot be analyzed/remediated (example: Detect quotas reached ; error from Microsoft Graph API), an alert is sent to configured administrators and clients via email.
-      The email contains context information on why the error happened.
-      There are two types of alerts:
-      - **error**: unexpected error during the analysis/remediation process (e.g. unable to contact Detect or Microsoft API).
-      - **warning**: "expected" error (= it is normal that it does not work) (e.g. file size > Detect limit, quotas reached, empty file sent to Detect, etc.).
-      Clients receive all alerts; admins only receive error alerts (warnings configurable).
-
-  - name: Save configuration result
-    description: |
-      After clicking on "Submit", several information will be printed, including an API key and the connector manager URL, which are both necessary to deploy the connector. **They must be saved because they won't be shown again**.
-      To deploy connector, a documentation is available in connector Actions > Configure.
+      **Initial Scan**: analyze initial content at connector start. Otherwise, only new changes are analyzed.
+        How it works: for each drive to monitor, a dedicated process is started, with a limit of 20 concurrent initial scans.
 
 launch_steps:
-  - name: Deploy via docker compose
-    description: |
-      (first draft version)
-
-      You can download the following docker compose and configuration file.
-      - put them in the same directory and do: `docker compose up -d`
-      - check if deployment succeeded with: `docker compose logs sharepoint-connector -f`
-
-        The first logs should say if the connector succeeded registering to connector manager.
-    files:
-      - docker-compose.yaml
-      - sharepoint_conf.yml
-
-  - name: Add new files to your OneDrive/SharePoint drives
-    description: |
-      You should now see files the connector moved to quarantine.
-
-      If you don't, check your configuration:
-      - is quarantine configured ?
-      - what is `MonitoringFrequency` value ? If it's long, it can explain why the connector did not analyze the files yet.

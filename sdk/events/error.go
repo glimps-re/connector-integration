@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"errors"
 	"time"
 )
 
@@ -31,10 +32,14 @@ const (
 	GMalwareConfigError ErrorEventType = "gmalware-bad-config"
 )
 
-// e MUST NOT be nil
+// returns an error if e is nil
 func (h *Handler) NotifyError(ctx context.Context, errorType ErrorEventType, e error) (err error) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
+	if e == nil {
+		err = errors.New("error cannot be nil")
+		return
+	}
 	if h.hadError(errorType, e.Error()) {
 		return
 	}
