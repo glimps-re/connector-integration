@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.4.1] - 12-01-2026
+
+### Fixed
+
+* fix get config
+
 ## [v0.4.0] - 09/01/2026
 
 ### Changed
