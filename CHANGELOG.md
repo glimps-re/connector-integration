@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.6.6]
+
+### Changed
+
+* Update sharepoint config
+
 ## [v0.6.5]
 
 ### Added
