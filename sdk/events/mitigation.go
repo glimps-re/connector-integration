@@ -67,6 +67,7 @@ type CommonDetails struct {
 	Malwares           []string `json:"malwares"`
 	GmalwareURLs       []string `json:"gmalware_urls"` // ex: expert analysis url
 	QuarantineLocation string   `json:"quarantine_location"`
+	SHA256             string   `json:"sha256"`
 }
 
 type FileInfos struct {
