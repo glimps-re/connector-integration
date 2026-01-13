@@ -624,6 +624,9 @@ func InitDefault(connectorType string) (config any, err error) {
 		config = &SharepointConfig{
 			ReconfigurableSharepointConfig: ReconfigurableSharepointConfig{
 				CommonConnectorConfig:             defaultCommonConfig,
+				MaxUploadSize:                     "100MB",
+				RetryFrequency:                    Duration(10 * time.Minute),
+				MonitoringFrequency:               Duration(10 * time.Minute),
 				SitesToMonitorWithoutInitialScan:  []string{},
 				SitesToMonitorWithInitialScan:     []string{},
 				GroupsToMonitorWithoutInitialScan: []string{},
@@ -632,6 +635,7 @@ func InitDefault(connectorType string) (config any, err error) {
 				GroupsToIgnore:                    []string{},
 				ExcludeDirs:                       []string{},
 				ExcludeFiles:                      []string{},
+				TimeoutFactor:                     1,
 			},
 		}
 	case HostKey:
