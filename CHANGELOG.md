@@ -1,6 +1,12 @@
 # Changelog
 
-## [v0.5.1] - xxx
+## [v0.6.0]
+
+### Added
+
+* GMalware Expert URL in expert config
+
+## [v0.5.1]
 
 ### Added
 
