@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.6.2]
+
+## Added
+
+* Analysis error in mitigation
+
 ## [v0.6.1]
 
 ### Added
