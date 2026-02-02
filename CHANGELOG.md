@@ -1,5 +1,18 @@
 # Changelog
 
+## [v0.7.0]
+
+### Added
+
+* Connector metrics:
+  * number of items processed
+  * total size processed
+  * number of mitigated items
+  * number of items in error
+  * daily quota
+  * available daily quota
+  * running since
+
 ## [v0.6.4] 
 
 ### Added
@@ -14,7 +27,7 @@
 
 ## [v0.6.2]
 
-## Added
+### Added
 
 * Analysis error in mitigation
 

@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 	"sync"
+
+	"github.com/glimps-re/connector-integration/sdk/metrics"
 )
 
 type EventHandler interface {
@@ -34,13 +36,14 @@ type Notifier interface {
 }
 
 type Handler struct {
-	logHandler slog.Handler
-	notifier   Notifier
-	errors     map[ErrorEventType]string
-	lock       sync.Mutex
+	logHandler       slog.Handler
+	notifier         Notifier
+	errors           map[ErrorEventType]string
+	metricsCollector *metrics.MetricsCollector
+	lock             sync.Mutex
 }
 
-func NewHandler(notifier Notifier, logLeveler slog.Leveler, unresolvedError map[ErrorEventType]string) (h *Handler) {
+func NewHandler(notifier Notifier, logLeveler slog.Leveler, unresolvedError map[ErrorEventType]string, metricsCollector *metrics.MetricsCollector) (h *Handler) {
 	if unresolvedError == nil {
 		unresolvedError = make(map[ErrorEventType]string)
 	}
@@ -49,7 +52,8 @@ func NewHandler(notifier Notifier, logLeveler slog.Leveler, unresolvedError map[
 			eventPusher: notifier,
 			leveler:     logLeveler,
 		},
-		notifier: notifier,
-		errors:   unresolvedError,
+		notifier:         notifier,
+		errors:           unresolvedError,
+		metricsCollector: metricsCollector,
 	}
 }

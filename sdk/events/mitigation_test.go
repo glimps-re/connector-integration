@@ -5,6 +5,8 @@ import (
 	"errors"
 	"log/slog"
 	"testing"
+
+	"github.com/glimps-re/connector-integration/sdk/metrics"
 )
 
 func TestHandler_NotifyFileMitigation(t *testing.T) {
@@ -60,7 +62,7 @@ func TestHandler_NotifyFileMitigation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := NewHandler(tt.notifier, &slog.LevelVar{}, map[ErrorEventType]string{})
+			h := NewHandler(tt.notifier, &slog.LevelVar{}, map[ErrorEventType]string{}, &metrics.MetricsCollector{})
 			if err := h.NotifyFileMitigation(t.Context(), tt.args.action, tt.args.elementID, tt.args.reason, tt.args.info); (err != nil) != tt.wantErr {
 				t.Errorf("Handler.notifyMitigation() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -121,7 +123,7 @@ func TestHandler_NotifyEmailMitigation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := NewHandler(tt.notifier, &slog.LevelVar{}, map[ErrorEventType]string{})
+			h := NewHandler(tt.notifier, &slog.LevelVar{}, map[ErrorEventType]string{}, &metrics.MetricsCollector{})
 			if err := h.NotifyEmailMitigation(t.Context(), tt.args.action, tt.args.elementID, tt.args.reason, tt.args.info); (err != nil) != tt.wantErr {
 				t.Errorf("Handler.notifyMitigation() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -182,7 +184,7 @@ func TestHandler_NotifyURLMitigation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := NewHandler(tt.notifier, &slog.LevelVar{}, map[ErrorEventType]string{})
+			h := NewHandler(tt.notifier, &slog.LevelVar{}, map[ErrorEventType]string{}, &metrics.MetricsCollector{})
 			if err := h.NotifyURLMitigation(t.Context(), tt.args.action, tt.args.elementID, tt.args.reason, tt.args.info); (err != nil) != tt.wantErr {
 				t.Errorf("Handler.notifyMitigation() error = %v, wantErr %v", err, tt.wantErr)
 			}

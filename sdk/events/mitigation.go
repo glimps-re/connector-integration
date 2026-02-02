@@ -94,6 +94,7 @@ type URLInfos struct {
 }
 
 func (h *Handler) NotifyFileMitigation(ctx context.Context, action MitigationAction, elementID string, reason MitigationReason, info FileInfos) (err error) {
+	h.metricsCollector.AddMitigatedItem() // independently of notification success
 	err = h.notifier.Notify(ctx, MitigationEvent{
 		Action:   action,
 		InfoType: InfoTypeFile,
@@ -110,6 +111,7 @@ func (h *Handler) NotifyFileMitigation(ctx context.Context, action MitigationAct
 }
 
 func (h *Handler) NotifyEmailMitigation(ctx context.Context, action MitigationAction, elementID string, reason MitigationReason, info EmailInfos) (err error) {
+	h.metricsCollector.AddMitigatedItem()
 	err = h.notifier.Notify(ctx, MitigationEvent{
 		Action:   action,
 		InfoType: InfoTypeEmail,
@@ -126,6 +128,7 @@ func (h *Handler) NotifyEmailMitigation(ctx context.Context, action MitigationAc
 }
 
 func (h *Handler) NotifyURLMitigation(ctx context.Context, action MitigationAction, elementID string, reason MitigationReason, info URLInfos) (err error) {
+	h.metricsCollector.AddMitigatedItem()
 	err = h.notifier.Notify(ctx, MitigationEvent{
 		Action:   action,
 		InfoType: InfoTypeURL,

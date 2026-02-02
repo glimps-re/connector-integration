@@ -14,6 +14,8 @@ import (
 
 	"github.com/glimps-re/connector-integration/sdk"
 	"github.com/glimps-re/connector-integration/sdk/events"
+	"github.com/glimps-re/connector-integration/sdk/metrics"
+	"github.com/glimps-re/go-gdetect/pkg/gdetect"
 	"github.com/google/uuid"
 )
 
@@ -43,7 +45,15 @@ func main() {
 		APIKey:   consoleAPIKey,
 		Insecure: consoleInsecure,
 	})
-	config := &sdk.DummyConfig{}
+	config := &sdk.DummyConfig{
+		ReconfigurableDummyConfig: sdk.ReconfigurableDummyConfig{
+			//nolint:gosec // not a real token
+			CommonConnectorConfig: sdk.CommonConnectorConfig{
+				GMalwareAPIURL:   "https://detect.glimps.re",
+				GMalwareAPIToken: "a1b2c3d4-e5f6a7b8-c9d0e1f2-a3b4c5d6-e7f8a9b0",
+			},
+		},
+	}
 	info := &sdk.RegistrationInfo{
 		Config: config,
 	}
@@ -56,6 +66,15 @@ func main() {
 	}
 	dummy := NewDummyConnector(config.GMalwareAPIURL, config.GMalwareAPIToken, info.Stopped, config.DummyString)
 	dummy.eventHandler = c.NewConsoleEventHandler(LogLevel, info.UnresolvedErrors)
+	detectClient, err := gdetect.NewClientFromConfig(gdetect.ClientConfig{
+		Endpoint: config.GMalwareAPIURL,
+		Token:    config.GMalwareAPIToken,
+		Insecure: config.GMalwareNoCertCheck,
+	})
+	if err != nil {
+		panic(err)
+	}
+	dummy.metricCollecter = c.NewMetricCollecter(detectClient)
 	consoleLogger = slog.New(dummy.eventHandler.GetLogHandler())
 	dummy.Launch(context.Background())
 
@@ -70,6 +89,7 @@ type DummyConnector struct {
 	quarantine       map[string]bool
 	stopped          bool
 	eventHandler     events.EventHandler
+	metricCollecter  metrics.MetricCollecter
 }
 
 func NewDummyConnector(apiURL string, apiToken string, stopped bool, dummyString string) (d *DummyConnector) {
@@ -141,6 +161,7 @@ func (d *DummyConnector) Launch(ctx context.Context) {
 					logger.Error("cannot push quarantine", slog.String("error", err.Error()))
 					consoleLogger.Error("cannot push quarantine", slog.String("error", err.Error()))
 				}
+				d.metricCollecter.AddItemProcessed(1024)
 				time.Sleep(time.Second * 10)
 				consoleLogger.Debug("trying a debug log")
 				err = d.emailMitigation(ctx, events.ActionBlock, events.ReasonPhishing, events.EmailInfos{
@@ -195,6 +216,9 @@ func (d *DummyConnector) Launch(ctx context.Context) {
 					logger.Error("cannot push quarantine", slog.String("error", err.Error()))
 					consoleLogger.Error("cannot push quarantine", slog.String("error", err.Error()))
 				}
+
+				logger.Error("could not process file test.txt", slog.String("error", "some error happened"))
+				d.metricCollecter.AddErrorItem()
 
 				time.Sleep(time.Second * 10)
 				err = d.eventHandler.NotifyError(ctx, events.GMalwareError, errors.New("network error"))
