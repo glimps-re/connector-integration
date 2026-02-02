@@ -20,6 +20,40 @@ type Connector interface {
 }
 ```
 
+## Metrics
+
+The SDK automatically collects and pushes connector metrics to the console during each get tasks cycle. Some metrics are collected automatically, others require the connector to report them.
+
+### Automatically collected metrics
+
+- `items_mitigated_total`: incremented automatically when `NotifyFileMitigation`, `NotifyEmailMitigation` or `NotifyURLMitigation` is called
+- `daily_quota` and `available_daily_quota`: retrieved automatically via Detect client passed to `NewMetricCollecter()`
+- `last_start_timestamp_seconds`: set automatically on `Register()`
+
+### Connector-reported metrics
+
+The connector must call `MetricCollecter` methods (obtained via `client.NewMetricCollecter(detectClient)`) to report:
+
+- `AddItemProcessed(size int64)`: increments items processed count by 1 and total size processed by `size` bytes
+- `AddErrorItem()`: increments error items count by 1
+
+### Pushed metrics
+
+example:  
+```json
+{
+    "daily_quota": 100,
+    "available_daily_quota": 75,
+    "last_start_timestamp_seconds": 1738000000,
+    "items_processed_total": 10,
+    "processed_bytes_total": 51200,
+    "items_mitigated_total": 3,
+    "items_error_total": 1
+}
+```
+
+Metrics are always sent, even if nothing changed since last push.
+
 ## Add a connector
 
 - Add your connector config under sdk/<connector>.go (also add it to `ConnectorConfig` interface under `sdk/loader.go`)
@@ -41,10 +75,20 @@ client := sdk.NewConnectorManagerClient(ctx, sdk.ConnectorManagerClientConfig{
 })
 
 // Register with the manager
-err := client.Register(ctx, "1.0.0", &sdk.RegistrationInfo{
+registerInfo := &sdk.RegistrationInfo{
     Config: yourConfig,
-})
+}
+err := client.Register(ctx, "1.0.0", registerInfo)
 
 // Start processing tasks
 client.Start(ctx, yourConnector)
+
+// Initialize event handler
+eventHandler := client.NewConsoleEventHandler(slog.LevelDebug, registerInfo.UnresolvedErrors)
+
+// Initialize console logger
+consoleLogger = slog.New(eventHandler.GetLogHandler())
+
+// Initialize metric collecter
+metricCollecter := client.NewMetricCollecter(detectClient)
 ```
