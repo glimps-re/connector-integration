@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"reflect"
 	"testing"
+
+	"github.com/glimps-re/connector-integration/sdk/metrics"
 )
 
 type notifierMock struct {
@@ -47,7 +49,7 @@ func TestNewHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotH := NewHandler(tt.args.notifier, &slog.LevelVar{}, tt.args.unresolvedError)
+			gotH := NewHandler(tt.args.notifier, &slog.LevelVar{}, tt.args.unresolvedError, &metrics.MetricsCollector{})
 			if !reflect.DeepEqual(gotH.errors, tt.wantH.errors) {
 				t.Errorf("NewHandler() = %v, want %v", gotH, tt.wantH)
 			}

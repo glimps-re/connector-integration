@@ -40,7 +40,7 @@ type HostMonitoringConfig struct {
 
 type HostQuarantineConfig struct {
 	Location string `json:"location" mapstructure:"location" yaml:"location" desc:"Directory path where quarantined files are stored (files are encrypted with .lock extension)"`
-	Password string `json:"password" mapstructure:"password" yaml:"password" password:"true" desc:"Password for encrypting quarantined files (required to restore files later)"`
+	Password string `json:"password" mapstructure:"password" yaml:"password" password:"true" desc:"Password for encrypting quarantined files (required to restore files later)"` //nolint:gosec // config field, not an exposed secret
 	Registry string `json:"registry" mapstructure:"registry" yaml:"registry" desc:"Path to the database that store quarantined and restored file entry (leave empty for in-memory store, lost on restart)"`
 }
 
