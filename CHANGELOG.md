@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.6.3]
+
+## Fixes
+
+* fix host connector config
+
 ## [v0.6.2]
 
 ## Added

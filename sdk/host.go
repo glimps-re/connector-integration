@@ -34,8 +34,7 @@ type HostActionsConfig struct {
 
 type HostMonitoringConfig struct {
 	PreScan           bool     `json:"prescan" mapstructure:"prescan" yaml:"prescan" desc:"Immediately scan all existing files in monitored paths when monitoring starts"`
-	ReScan            bool     `json:"rescan" mapstructure:"rescan" yaml:"rescan" desc:"Enable periodic re-scanning of all files (requires period to be set)"`
-	Period            Duration `json:"period" mapstructure:"period" yaml:"period" desc:"Time interval between periodic re-scans (e.g., '1h', '30m', requires rescan enabled)"`
+	Period            Duration `json:"period" mapstructure:"period" yaml:"period" desc:"If set, enable periodic re-scan. Interval between periodic re-scans (e.g., '1h', '30m')"`
 	ModificationDelay Duration `json:"modification_delay" mapstructure:"modification_delay" yaml:"modification_delay" desc:"Wait time after file modification before scanning (e.g., '30s', prevents scanning incomplete writes)"`
 }
 
