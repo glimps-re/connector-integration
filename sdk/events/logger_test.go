@@ -7,6 +7,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+
+	"github.com/glimps-re/connector-integration/sdk/metrics"
 )
 
 func TestLogHandler(t *testing.T) {
@@ -195,7 +197,7 @@ func TestLogHandler(t *testing.T) {
 			leveler := &slog.LevelVar{}
 			leveler.Set(tt.logLevel)
 
-			h := NewHandler(notifier, leveler, map[ErrorEventType]string{})
+			h := NewHandler(notifier, leveler, map[ErrorEventType]string{}, &metrics.MetricsCollector{})
 			l := slog.New(h.GetLogHandler())
 			tt.log(l)
 

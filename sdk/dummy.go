@@ -8,7 +8,7 @@ type DummyConfig struct {
 type ReconfigurableDummyConfig struct {
 	CommonConnectorConfig
 	DummyString string        `json:"dummy_string" validate:"required" `
-	Password    string        `json:"password,omitempty" password:"true"`
+	Password    string        `json:"password,omitempty" password:"true"` //nolint:gosec // config field, not an exposed secret
 	Enum        string        `json:"enum" validate:"required,oneof=quarantine delete log" desc:"Action to perform when a file is detected as malware."`
 	Objects     []DummyObject `json:"objects" desc:"Array of objects"`
 }

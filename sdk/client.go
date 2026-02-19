@@ -18,6 +18,8 @@ import (
 
 	"github.com/cenkalti/backoff/v5"
 	"github.com/glimps-re/connector-integration/sdk/events"
+	"github.com/glimps-re/connector-integration/sdk/metrics"
+	"github.com/glimps-re/go-gdetect/pkg/gdetect"
 )
 
 var LogLevel = &slog.LevelVar{}
@@ -49,14 +51,15 @@ type CtxRequestIDKey struct{}
 
 type ConnectorManagerClientConfig struct {
 	URL      string `mapstructure:"url"`
-	APIKey   string `mapstructure:"api-key"`
+	APIKey   string `mapstructure:"api-key"` //nolint:gosec // config field, not an exposed secret
 	Insecure bool   `mapstructure:"insecure"`
 }
 
 type ConnectorManagerClient struct {
-	httpClient *http.Client
-	url        string
-	apiKey     string
+	httpClient       *http.Client
+	url              string
+	apiKey           string
+	metricsCollector *metrics.MetricsCollector
 }
 
 type ConnectorStatus int
@@ -104,13 +107,21 @@ func NewConnectorManagerClient(ctx context.Context, config ConnectorManagerClien
 	}
 	c.url = config.URL
 	c.apiKey = config.APIKey
+	c.metricsCollector = &metrics.MetricsCollector{}
 	return
 }
 
 var _ events.Notifier = &ConnectorManagerClient{}
 
 func (c ConnectorManagerClient) NewConsoleEventHandler(logLeveler slog.Leveler, unresolvedError map[events.ErrorEventType]string) *events.Handler {
-	return events.NewHandler(c, logLeveler, unresolvedError)
+	return events.NewHandler(c, logLeveler, unresolvedError, c.metricsCollector)
+}
+
+// NewMetricCollecter returns a MetricCollecter for the connector to report metrics.
+// detectClient is used to automatically retrieve quotas from the gdetect API.
+func (c ConnectorManagerClient) NewMetricCollecter(detectClient gdetect.GDetectSubmitter) metrics.MetricCollecter {
+	c.metricsCollector.SetDetectClient(detectClient)
+	return c.metricsCollector
 }
 
 type RegistrationInfo struct {
@@ -127,6 +138,7 @@ func (c ConnectorManagerClient) Register(ctx context.Context, version string, in
 	if err != nil {
 		return
 	}
+	c.metricsCollector.SetRunningSince(time.Now().Unix())
 	return
 }
 
@@ -147,6 +159,7 @@ func (c ConnectorManagerClient) getConfig(ctx context.Context) (config json.RawM
 func (c ConnectorManagerClient) Start(ctx context.Context, connector Connector) {
 	logger.Debug("start connector")
 	tasks := c.tasks(ctx)
+
 	for {
 		select {
 		case task, chanOpened := <-tasks:
@@ -256,6 +269,11 @@ func (c ConnectorManagerClient) Notify(ctx context.Context, event any) (err erro
 	return
 }
 
+func (c ConnectorManagerClient) pushMetrics(ctx context.Context, m metrics.ConnectorMetrics) (err error) {
+	err = c.call(ctx, http.MethodPost, "metrics", m, nil)
+	return
+}
+
 func (c ConnectorManagerClient) tasks(ctx context.Context) (tasks <-chan Task) {
 	tasksC := make(chan Task, taskChannelBufferSize) // Buffer to allow multiple tasks to be queued
 	tasks = tasksC
@@ -267,6 +285,20 @@ func (c ConnectorManagerClient) tasks(ctx context.Context) (tasks <-chan Task) {
 				logger.Warn("context done", "reason", ctx.Err())
 				return
 			default:
+				err := c.metricsCollector.GetAndStoreQuotas(ctx)
+				if err != nil {
+					logger.Error("GetAndStoreQuotas error", slog.String("error", err.Error()))
+				}
+				metrics := c.metricsCollector.GetAndReset()
+				err = c.pushMetrics(ctx, metrics)
+				switch {
+				case errors.Is(err, ErrUnauthorizedConnector):
+					return
+				case err != nil:
+					logger.Error("failed to push metrics", slog.String("error", err.Error()))
+					c.metricsCollector.RestoreCounterMetrics(metrics)
+				}
+
 				tasks, err := c.getTasks(ctx)
 				switch {
 				case errors.Is(err, ErrUnauthorizedConnector):
@@ -361,7 +393,7 @@ func (c ConnectorManagerClient) retryDo(req *http.Request) (resp *http.Response,
 	resp, err = backoff.Retry(
 		req.Context(),
 		func() (resp *http.Response, err error) {
-			resp, err = c.httpClient.Do(req)
+			resp, err = c.httpClient.Do(req) //nolint:gosec // Base URL from client config, not user input
 			if err != nil {
 				logger.Debug("try http request error", slog.String("error", err.Error()))
 				return

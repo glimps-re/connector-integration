@@ -157,7 +157,7 @@ type ConfigHelmer interface {
 
 type CommonConnectorConfig struct {
 	GMalwareAPIURL      string   `json:"gmalware_api_url" yaml:"gmalware_api_url" mapstructure:"gmalware_api_url" validate:"required,url" desc:"GLIMPS Malware API URL" `
-	GMalwareExpertURL   string   `json:"gmalware_expert_url" yaml:"gmalware_expert_url" mapstructure:"gmalware_expert_url" desc:"GLIMPS Malware expert URL"`
+	GMalwareExpertURL   string   `json:"gmalware_expert_url" yaml:"gmalware_expert_url" validate:"omitempty,url" mapstructure:"gmalware_expert_url" desc:"GLIMPS Malware expert URL"`
 	GMalwareAPIToken    string   `json:"gmalware_api_token" yaml:"gmalware_api_token" mapstructure:"gmalware_api_token" validate:"required" desc:"GLIMPS Malware API Token" `
 	GMalwareNoCertCheck bool     `json:"gmalware_no_cert_check" yaml:"gmalware_no_cert_check" mapstructure:"gmalware_no_cert_check" desc:"Disable certificate check for GLIMPS Malware"`
 	GMalwareUserTags    []string `json:"gmalware_user_tags" yaml:"gmalware_user_tags" mapstructure:"gmalware_user_tags" desc:"List of tags set by connector on GLIMPS Malware detect submission"`
@@ -168,7 +168,7 @@ type CommonConnectorConfig struct {
 }
 
 type ConsoleConfig struct {
-	APIKey   string
+	APIKey   string //nolint:gosec // config field, not an exposed secret
 	URL      string
 	Insecure bool
 }
