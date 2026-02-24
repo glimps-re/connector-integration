@@ -33,6 +33,8 @@ type RestoreActionContent struct {
 
 func (t Task) Status() string {
 	switch {
+	case t.Started == 0 && t.Archived:
+		return "cancelled"
 	case t.Started == 0:
 		return "pending"
 	case t.Started > 0 && t.Completed == 0:

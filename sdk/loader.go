@@ -168,7 +168,7 @@ type CommonConnectorConfig struct {
 }
 
 type ConsoleConfig struct {
-	APIKey   string
+	APIKey   string //nolint:gosec // needed for connector
 	URL      string
 	Insecure bool
 }

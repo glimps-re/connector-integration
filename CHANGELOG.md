@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.6.5]
+
+### Added
+
+* Cancelled status for archived pending task after a cancel
+
 ## [v0.6.4] 
 
 ### Added
