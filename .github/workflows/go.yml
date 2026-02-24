@@ -16,4 +16,4 @@ jobs:
         with:
           go-private-repo: github.com/glimps-re/*
           go-private-token: ${{ secrets.GO_PRIVATE_TOKEN }}
-          go-version: '1.25'
+          go-version: '1.26'

@@ -49,7 +49,7 @@ type CtxRequestIDKey struct{}
 
 type ConnectorManagerClientConfig struct {
 	URL      string `mapstructure:"url"`
-	APIKey   string `mapstructure:"api-key"`
+	APIKey   string `mapstructure:"api-key"` //nolint:gosec // needed to configure connector
 	Insecure bool   `mapstructure:"insecure"`
 }
 
@@ -361,7 +361,7 @@ func (c ConnectorManagerClient) retryDo(req *http.Request) (resp *http.Response,
 	resp, err = backoff.Retry(
 		req.Context(),
 		func() (resp *http.Response, err error) {
-			resp, err = c.httpClient.Do(req)
+			resp, err = c.httpClient.Do(req) //nolint:gosec // only called from code
 			if err != nil {
 				logger.Debug("try http request error", slog.String("error", err.Error()))
 				return
