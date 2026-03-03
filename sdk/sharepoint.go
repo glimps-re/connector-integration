@@ -17,10 +17,8 @@ type SharepointConfig struct {
 type ReconfigurableSharepointConfig struct {
 	CommonConnectorConfig
 
-	ClientName       string `json:"client_name" validate:"required"`
-	M365TenantID     string `json:"m365_tenant_id" validate:"required" desc:"Tenant ID"`
-	M365ClientID     string `json:"m365_client_id" validate:"required" desc:"M365 app registration client ID"`
-	M365ClientSecret string `json:"m365_client_secret,omitempty" password:"true" validate:"required" desc:"M365 app registration client secret"`
+	ClientName string `json:"client_name" validate:"required"`
+	M365       M365   `json:"m365" mapstructure:"mitigation_action" validate:"required"`
 
 	RealTimeMonitoring bool   `json:"real_time_monitoring" mapstructure:"real-time-monitoring" desc:"Use real-time monitoring. Requires 'WebhookURL' to be provided"`
 	WebhookURL         string `json:"webhook_url" validate:"required_if=RealTimeMonitoring true,omitempty,url,startswith=https" desc:"URL where microsoft will send webhook notifications (technically to webhook-url/api/v1). Must starts by https"`
@@ -54,6 +52,12 @@ type ReconfigurableSharepointConfig struct {
 	ExclusionRules []SPExclusionRule `json:"exclusion_rules" mapstructure:"exclusion-rules" desc:"Exclusion rules allow to exclude certain files or folders from analysis. It is particularly useful for files that are modified regularly, for which whitelisting by hash is not sufficient. Each rule is associated to a single drive (= a library in a site)"`
 
 	TimeoutFactor int `json:"timeout_factor" mapstructure:"timeout-factor" validate:"min=1" desc:"Optional factor to increase timeouts (if set, must be an integer >= 1). 1 to use default timeouts values"`
+}
+
+type M365 struct {
+	TenantID     string `json:"m365_tenant_id" mapstructure:"log" validate:"required" desc:"Tenant ID"`
+	ClientID     string `json:"m365_client_id" mapstructure:"log" validate:"required" desc:"M365 app registration client ID"`
+	ClientSecret string `json:"m365_client_secret,omitempty" mapstructure:"log" password:"true" validate:"required" desc:"M365 app registration client secret"`
 }
 
 type SPMitigationActions struct {
