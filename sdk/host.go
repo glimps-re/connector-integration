@@ -4,11 +4,11 @@ type HostConfig struct {
 	CommonConnectorConfig    `yaml:",inline" mapstructure:",squash"`
 	Workers                  int                  `json:"workers" mapstructure:"workers" yaml:"workers" validate:"min=1" desc:"Number of concurrent workers for file analysis (default: 4, affects CPU usage)"`
 	ExtractWorkers           int                  `json:"extract_workers" mapstructure:"extract_workers" yaml:"extract_workers" validate:"min=1" desc:"Number of concurrent workers for archive extraction (default: 2, used when extract is enabled)"`
-	Extract                  bool                 `json:"extract" mapstructure:"extract" yaml:"extract" desc:"Enable archive extraction for files exceeding max_file_size (archives are unpacked and contents scanned)"`
-	RecursiveExtractMaxDepth int                  `json:"recursive_extract_max_depth" mapstructure:"recursive_extract_max_depth" yaml:"recursive_extract_max_depth" desc:"Maximum nesting level for extraction. Beyond it, files are directly send for analyze (if possible)"`
-	RecursiveExtractMaxSize  string               `json:"recursive_extract_max_size" mapstructure:"recursive_extract_max_size" yaml:"recursive_extract_max_size" desc:"Maximum size for extracted content from a root archive (across all nesting levels), e.g. '5GB'. Beyond it, files are directly send for analyze. Note: the actual total may exceed by up to one archive's extracted content"`
+	Extract                  bool                 `json:"extract" mapstructure:"extract" yaml:"extract" desc:"Enable archive extraction (archives are unpacked and contents scanned)"`
+	RecursiveExtractMaxDepth int                  `json:"recursive_extract_max_depth" mapstructure:"recursive_extract_max_depth" yaml:"recursive_extract_max_depth" desc:"Maximum nesting level for recursive extraction. Beyond this depth, nested archives are sent for analysis instead of being extracted"`
+	RecursiveExtractMaxSize  string               `json:"recursive_extract_max_size" mapstructure:"recursive_extract_max_size" yaml:"recursive_extract_max_size" desc:"Maximum total size of extracted content across all nesting levels (e.g., '5GB'). When reached, remaining archives are sent for analysis instead of being extracted. Note: may exceed by up to one archive's extracted content"`
 	RecursiveExtractMaxFiles int                  `json:"recursive_extract_max_files" mapstructure:"recursive_extract_max_files" yaml:"recursive_extract_max_files" desc:"Maximum number of files to extract recursively"`
-	MaxFileSize              string               `json:"max_file_size" mapstructure:"max_file_size" yaml:"max_file_size" desc:"Maximum file size to send for analyze (e.g., '100MB'). Files exceeding this are extracted if 'extract' is enabled, otherwise rejected"`
+	MaxFileSize              string               `json:"max_file_size" mapstructure:"max_file_size" yaml:"max_file_size" desc:"Maximum file size to submit to GLIMPS Malware Detect (e.g., '100MB')"`
 	Paths                    []string             `json:"paths" yaml:"paths" validate:"required,min=1" desc:"List of directories or files to monitor and scan (can be absolute or relative paths)"`
 	FollowSymlinks           bool                 `json:"follow_symlinks" yaml:"follow_symlinks" desc:"Follow symbolic links when scanning directories (if disabled, symlinks are skipped)"`
 	Actions                  HostActionsConfig    `json:"actions" mapstructure:"actions" yaml:"actions" desc:"Actions to perform on scanned files (delete, quarantine, log, move, print)"`
@@ -41,7 +41,7 @@ type HostMonitoringConfig struct {
 type HostQuarantineConfig struct {
 	Location string `json:"location" mapstructure:"location" yaml:"location" desc:"Directory path where quarantined files are stored (files are encrypted with .lock extension)"`
 	Password string `json:"password" mapstructure:"password" yaml:"password" password:"true" desc:"Password for encrypting quarantined files (required to restore files later)"`
-	Registry string `json:"registry" mapstructure:"registry" yaml:"registry" desc:"Path to the database that store quarantined and restored file entry (leave empty for in-memory store, lost on restart)"`
+	Registry string `json:"registry" mapstructure:"registry" yaml:"registry" desc:"Path to the database that stores quarantined and restored file entry (leave empty for in-memory store, lost on restart)"`
 }
 
 type HostMoveConfig struct {

@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.6.7]
+
+### Fixed
+
+* Correct host config fields descriptions
+
 ## [v0.6.6]
 
 ### Changed
