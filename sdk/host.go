@@ -45,6 +45,7 @@ type HostQuarantineConfig struct {
 }
 
 type HostMoveConfig struct {
-	Destination string `json:"destination" mapstructure:"destination" yaml:"destination" desc:"Target directory for moving clean files (preserves subdirectory structure)"`
-	Source      string `json:"source" mapstructure:"source" yaml:"source" desc:"Source directory filter (only clean files within this path are moved to destination)"`
+	Destination   string `json:"destination" mapstructure:"destination" yaml:"destination" desc:"Target directory for moving clean files (preserves subdirectory structure)"`
+	Source        string `json:"source" mapstructure:"source" yaml:"source" desc:"Source directory filter (only clean files within this path are moved to destination)"`
+	CleanupSource bool   `json:"cleanup_source" mapstructure:"cleanup_source" yaml:"cleanup_source" desc:"Remove empty source directories after files have been moved or deleted"`
 }

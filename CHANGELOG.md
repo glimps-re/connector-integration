@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.6.7]
+
+### Changed
+
+* Added clean input source option to move action config in host connector
+
 ## [v0.6.6]
 
 ### Changed
