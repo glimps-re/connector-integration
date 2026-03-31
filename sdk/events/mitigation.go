@@ -25,12 +25,12 @@ type MitigationEvent struct {
 type MitigationAction string
 
 const (
-	// threat has been stored in quarantine
+	// threat has been moved to quarantine
 	ActionQuarantine MitigationAction = "quarantine"
-	// threat has been blocked without quarantine
+	// threat has been blocked
 	ActionBlock MitigationAction = "block"
-	// threat has been removed without quarantine
-	ActionRemove MitigationAction = "remove"
+	// threat has been deleted
+	ActionDelete MitigationAction = "delete"
 	// a log message has been produced to warn about threat
 	ActionLog MitigationAction = "log"
 )
