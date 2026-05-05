@@ -28,14 +28,10 @@ var (
 
 func main() {
 	sdk.LogLevel.Set(slog.LevelDebug)
-	consoleURL := os.Getenv("DUMMY_CONSOLE_URL")
-	if consoleURL == "" {
-		panic("empty console url: " + consoleURL)
-	}
-	consoleAPIKey := os.Getenv("DUMMY_CONSOLE_API_KEY")
-	if consoleAPIKey == "" {
-		panic("empty console apikey: " + consoleAPIKey)
-	}
+	consoleURL := getEnvVariableOrPanic("DUMMY_CONSOLE_URL", "console url")
+	consoleAPIKey := getEnvVariableOrPanic("DUMMY_CONSOLE_API_KEY", "console apikey")
+	gMalwareApiUrl := getEnvVariableOrPanic("GMALWARE_API_URL", "gmalware api url")
+	gMalwareApiToken := getEnvVariableOrPanic("GMALWARE_API_TOKEN", "gmalware api token")
 	consoleInsecure, err := strconv.ParseBool(os.Getenv("DUMMY_CONSOLE_INSECURE"))
 	if err != nil {
 		consoleInsecure = false
@@ -49,8 +45,8 @@ func main() {
 		ReconfigurableDummyConfig: sdk.ReconfigurableDummyConfig{
 			//nolint:gosec // not a real token
 			CommonConnectorConfig: sdk.CommonConnectorConfig{
-				GMalwareAPIURL:   "https://detect.glimps.re",
-				GMalwareAPIToken: "a1b2c3d4-e5f6a7b8-c9d0e1f2-a3b4c5d6-e7f8a9b0",
+				GMalwareAPIURL:   gMalwareApiUrl,
+				GMalwareAPIToken: gMalwareApiToken,
 			},
 		},
 	}
@@ -101,6 +97,14 @@ func NewDummyConnector(apiURL string, apiToken string, stopped bool, dummyString
 		quarantine:       make(map[string]bool),
 		stopped:          stopped,
 		eventHandler:     events.NoopEventHandler{},
+	}
+	return
+}
+
+func getEnvVariableOrPanic(variableName string, readableVariableName string) (value string) {
+	value = os.Getenv(variableName)
+	if value == "" {
+		panic("Empty " + readableVariableName)
 	}
 	return
 }
