@@ -43,7 +43,6 @@ func main() {
 	})
 	config := &sdk.DummyConfig{
 		ReconfigurableDummyConfig: sdk.ReconfigurableDummyConfig{
-			//nolint:gosec // not a real token
 			CommonConnectorConfig: sdk.CommonConnectorConfig{
 				GMalwareAPIURL:   gMalwareApiUrl,
 				GMalwareAPIToken: gMalwareApiToken,
