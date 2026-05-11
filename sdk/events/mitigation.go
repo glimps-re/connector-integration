@@ -69,6 +69,7 @@ type CommonDetails struct {
 	QuarantineLocation string   `json:"quarantine_location"`
 	SHA256             string   `json:"sha256"`
 	AnalysisError      string   `json:"analysis_error,omitempty"`
+	AdditionalInfo     string   `json:"additional_info,omitempty" desc:"optional, for context."`
 }
 
 type FileInfos struct {

@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.7.0]
+
+### Added
+
+* field AdditionalInfo in mitigation
+
 ## [v0.6.7]
 
 ### Fixed
