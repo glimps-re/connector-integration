@@ -133,6 +133,79 @@ func (d *DummyConnector) emailMitigation(ctx context.Context, action events.Miti
 	return
 }
 
+type FakeFileData struct {
+	malwares []string
+	label    string
+	filetype string
+	size     int64
+}
+
+func (d *DummyConnector) pushFileToQuarantine(ctx context.Context, fakeFileData FakeFileData) {
+	fmt.Println("adding something to quarantine")
+	id, err := genID()
+	if err != nil {
+		logger.Error("cannot generate id", slog.String("error", err.Error()))
+		panic(err)
+	}
+	d.quarantine[id] = true
+	err = d.eventHandler.NotifyFileMitigation(ctx, events.ActionQuarantine, id, events.ReasonMalware, events.FileInfos{
+		CommonDetails: events.CommonDetails{
+			Malwares:     fakeFileData.malwares,
+			GmalwareURLs: []string{"fake.test.local"},
+		},
+		File:     fakeFileData.label,
+		Filetype: fakeFileData.filetype,
+	})
+	if err != nil {
+		logger.Error("cannot push quarantine", slog.String("error", err.Error()))
+		consoleLogger.Error("cannot push quarantine", slog.String("error", err.Error()))
+	}
+	d.metricCollecter.AddItemProcessed(fakeFileData.size)
+}
+
+type FakeEmailData struct {
+	malwares   []string
+	subject    string
+	sender     string
+	recipients []string
+	size       int64
+}
+
+func (d *DummyConnector) pushEmailToMitigation(ctx context.Context, fakeEmailData FakeEmailData) {
+	err := d.emailMitigation(ctx, events.ActionBlock, events.ReasonPhishing, events.EmailInfos{
+		CommonDetails: events.CommonDetails{
+			Malwares:     fakeEmailData.malwares,
+			GmalwareURLs: []string{"fake.test.local"},
+		},
+		Subject:    fakeEmailData.subject,
+		Sender:     fakeEmailData.sender,
+		Recipients: fakeEmailData.recipients,
+	})
+	if err != nil {
+		logger.Error("cannot push quarantine", slog.String("error", err.Error()))
+		consoleLogger.Error("cannot push quarantine", slog.String("error", err.Error()))
+	}
+	d.metricCollecter.AddItemProcessed(fakeEmailData.size)
+}
+
+func getSpeedRate() (speedRate float64) {
+	speedRateStr := os.Getenv("SPEED_RATE")
+	if speedRateStr == "" {
+		speedRateStr = "1"
+	}
+	speedRate, err := strconv.ParseFloat(speedRateStr, 64)
+	if err != nil {
+		speedRate = 1.00
+	}
+	return
+}
+
+func sleep(seconds int64) {
+	speedRate := getSpeedRate()
+	duration := time.Millisecond * time.Duration(10*1000*speedRate)
+	time.Sleep(duration)
+}
+
 func (d *DummyConnector) Launch(ctx context.Context) {
 	go func(ctx context.Context) {
 		for {
@@ -145,97 +218,53 @@ func (d *DummyConnector) Launch(ctx context.Context) {
 					continue
 				}
 				consoleLogger.Info("adding something to quarantine", slog.String("root", "root value"), slog.GroupAttrs("sub", slog.String("test", "test value")))
-				fmt.Println("adding something to quarantine")
-				id, err := genID()
-				if err != nil {
-					logger.Error("cannot generate id", slog.String("error", err.Error()))
-					panic(err)
-				}
-				d.quarantine[id] = true
-				err = d.eventHandler.NotifyFileMitigation(ctx, events.ActionQuarantine, id, events.ReasonMalware, events.FileInfos{
-					CommonDetails: events.CommonDetails{
-						Malwares:     []string{"test malware"},
-						GmalwareURLs: []string{"fake.test.local"},
-					},
-					File:     "test.tst",
-					Filetype: "tst",
-				})
-				if err != nil {
-					logger.Error("cannot push quarantine", slog.String("error", err.Error()))
-					consoleLogger.Error("cannot push quarantine", slog.String("error", err.Error()))
-				}
-				d.metricCollecter.AddItemProcessed(1024)
-				time.Sleep(time.Second * 10)
+				d.pushFileToQuarantine(ctx, FakeFileData{malwares: []string{"test malware"}, label: "test.tst", filetype: "tst"})
+				d.pushFileToQuarantine(ctx, FakeFileData{malwares: []string{"huge Big Bang"}, label: "iAmSoSweet.zip", filetype: "zip"})
+				sleep(10)
 				consoleLogger.Debug("trying a debug log")
-				err = d.emailMitigation(ctx, events.ActionBlock, events.ReasonPhishing, events.EmailInfos{
-					CommonDetails: events.CommonDetails{
-						Malwares:     []string{"testphish"},
-						GmalwareURLs: []string{"fake.test.local"},
-					},
-					Subject:    "PeRsO truc truc perso",
-					Sender:     "tst@local.fr",
-					Recipients: []string{"truc@far.away"},
+				d.pushEmailToMitigation(ctx, FakeEmailData{
+					malwares:   []string{"testphish"},
+					subject:    "PeRsO truc truc perso",
+					sender:     "tst@local.fr",
+					recipients: []string{"truc@far.away"},
+					size:       125,
 				})
-				if err != nil {
-					logger.Error("cannot push quarantine", slog.String("error", err.Error()))
-					consoleLogger.Error("cannot push quarantine", slog.String("error", err.Error()))
-				}
-				err = d.emailMitigation(ctx, events.ActionQuarantine, events.ReasonMalware, events.EmailInfos{
-					CommonDetails: events.CommonDetails{
-						Malwares:     []string{"testmalware"},
-						GmalwareURLs: []string{"fake.test.local"},
-					},
-					Subject:    "Very important thing ! open it",
-					Sender:     "yet.another@mail.en",
-					Recipients: []string{"prenom.nom@domain.fr", "azer.jklm@uiop.ee"},
+				d.pushEmailToMitigation(ctx, FakeEmailData{
+					malwares:   []string{"testmalware"},
+					subject:    "Very important thing ! open it",
+					sender:     "yet.another@mail.en",
+					recipients: []string{"prenom.nom@domain.fr", "azer.jklm@uiop.ee"},
+					size:       614,
 				})
-				if err != nil {
-					logger.Error("cannot push quarantine", slog.String("error", err.Error()))
-					consoleLogger.Error("cannot push quarantine", slog.String("error", err.Error()))
-				}
-				err = d.emailMitigation(ctx, events.ActionBlock, events.ReasonMalware, events.EmailInfos{
-					CommonDetails: events.CommonDetails{
-						Malwares:     []string{"testother"},
-						GmalwareURLs: []string{"fake.test.local"},
-					},
-					Subject:    "Other important content",
-					Sender:     "yet.another@mail.en",
-					Recipients: []string{"mister.pouet@domain.fr", "azeryuiop.jklmqsdf@uiop.ee"},
+				d.pushEmailToMitigation(ctx, FakeEmailData{
+					malwares:   []string{"testother"},
+					subject:    "Other important content",
+					sender:     "yet.another@mail.en",
+					recipients: []string{"mister.pouet@domain.fr", "azeryuiop.jklmqsdf@uiop.ee"},
+					size:       2947,
 				})
-				if err != nil {
-					logger.Error("cannot push quarantine", slog.String("error", err.Error()))
-					consoleLogger.Error("cannot push quarantine", slog.String("error", err.Error()))
-				}
-				err = d.emailMitigation(ctx, events.ActionBlock, events.ReasonMalware, events.EmailInfos{
-					CommonDetails: events.CommonDetails{
-						Malwares:     []string{"testanother"},
-						GmalwareURLs: []string{"fake.test.local"},
-					},
-					Subject:    "Again an important thing ? don't wait !",
-					Sender:     "yet.another@mail.en",
-					Recipients: []string{"miss.pouet@domain.fr", "azerreza.jklmmlkj@uiop.ee"},
+				d.pushEmailToMitigation(ctx, FakeEmailData{
+					malwares:   []string{"testanother"},
+					subject:    "Again an important thing ? don't wait !",
+					sender:     "yet.another@mail.en",
+					recipients: []string{"miss.pouet@domain.fr", "azerreza.jklmmlkj@uiop.ee"},
+					size:       63,
 				})
-				if err != nil {
-					logger.Error("cannot push quarantine", slog.String("error", err.Error()))
-					consoleLogger.Error("cannot push quarantine", slog.String("error", err.Error()))
-				}
-
 				logger.Error("could not process file test.txt", slog.String("error", "some error happened"))
 				d.metricCollecter.AddErrorItem()
-
-				time.Sleep(time.Second * 10)
-				err = d.eventHandler.NotifyError(ctx, events.GMalwareError, errors.New("network error"))
+				sleep(10)
+				err := d.eventHandler.NotifyError(ctx, events.GMalwareError, errors.New("network error"))
 				if err != nil {
 					logger.Error("cannot push error event", slog.String("error", err.Error()))
 					consoleLogger.Warn("cannot push error event", slog.String("error", err.Error()))
 				}
-				time.Sleep(time.Second * 30)
+				sleep(30)
 				err = d.eventHandler.NotifyResolution(ctx, "resolved itself", events.GMalwareError)
 				if err != nil {
 					logger.Error("cannot push resolution event", slog.String("error", err.Error()))
 					consoleLogger.Warn("cannot push resolution event", slog.String("error", err.Error()))
 				}
-				time.Sleep(time.Second * 30)
+				sleep(30)
 			}
 		}
 	}(ctx)
