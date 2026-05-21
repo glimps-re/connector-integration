@@ -85,9 +85,14 @@ type DummyConnector struct {
 	stopped          bool
 	eventHandler     events.EventHandler
 	metricCollecter  metrics.MetricCollecter
+	gDetectSubmitter gdetect.ControllerGDetectSubmitter
 }
 
 func NewDummyConnector(apiURL string, apiToken string, stopped bool, dummyString string) (d *DummyConnector) {
+	submitter, err := gdetect.NewClientFromConfig(gdetect.ClientConfig{Endpoint: apiURL, Token: apiToken})
+	if err != nil {
+		panic(err)
+	}
 	d = &DummyConnector{
 		GMalwareAPIURL:   apiURL,
 		GMalwareAPIToken: apiToken,
@@ -96,6 +101,7 @@ func NewDummyConnector(apiURL string, apiToken string, stopped bool, dummyString
 		quarantine:       make(map[string]bool),
 		stopped:          stopped,
 		eventHandler:     events.NoopEventHandler{},
+		gDetectSubmitter: submitter,
 	}
 	return
 }
@@ -182,27 +188,46 @@ func (d *DummyConnector) pushEmailToMitigation(ctx context.Context, fakeEmailDat
 		Recipients: fakeEmailData.recipients,
 	})
 	if err != nil {
-		logger.Error("cannot push quarantine", slog.String("error", err.Error()))
-		consoleLogger.Error("cannot push quarantine", slog.String("error", err.Error()))
+		logger.Error("cannot push email mitigation", slog.String("error", err.Error()))
+		consoleLogger.Error("cannot push email mitigation", slog.String("error", err.Error()))
 	}
 	d.metricCollecter.AddItemProcessed(fakeEmailData.size)
 }
 
-func getSpeedRate() (speedRate float64) {
-	speedRateStr := os.Getenv("SPEED_RATE")
-	if speedRateStr == "" {
-		speedRateStr = "1"
-	}
-	speedRate, err := strconv.ParseFloat(speedRateStr, 64)
+func (d *DummyConnector) submitFileToDetect(ctx context.Context) {
+	file, err := os.CreateTemp("", "dummy-sample-*.txt")
 	if err != nil {
-		speedRate = 1.00
+		panic(err)
+	}
+	filename := file.Name()
+	defer func() { _ = os.Remove(filename) }() // best-effort cleanup of the temp sample
+	_, err = file.WriteString("I'm a sample!")
+	if err != nil {
+		panic(err)
+	}
+	err = file.Close()
+	if err != nil {
+		panic(err)
+	}
+	_, err = d.gDetectSubmitter.SubmitFile(ctx, filename, gdetect.SubmitOptions{})
+	if err != nil {
+		logger.Error("cannot submit file to detect", slog.String("error", err.Error()))
+		consoleLogger.Error("cannot submit file to detect", slog.String("error", err.Error()))
+		return
+	}
+}
+
+func getSpeedRate() (speedRate int) {
+	speedRate, err := strconv.Atoi(os.Getenv("SPEED_RATE"))
+	if err != nil {
+		speedRate = 1
 	}
 	return
 }
 
-func sleep(seconds int64) {
+func sleep(seconds int) {
 	speedRate := getSpeedRate()
-	duration := time.Millisecond * time.Duration(10*1000*speedRate)
+	duration := time.Second * time.Duration(seconds*speedRate)
 	time.Sleep(duration)
 }
 
@@ -218,56 +243,81 @@ func (d *DummyConnector) Launch(ctx context.Context) {
 					continue
 				}
 				consoleLogger.Info("adding something to quarantine", slog.String("root", "root value"), slog.GroupAttrs("sub", slog.String("test", "test value")))
-				d.pushFileToQuarantine(ctx, FakeFileData{malwares: []string{"test malware"}, label: "test.tst", filetype: "tst"})
-				d.pushFileToQuarantine(ctx, FakeFileData{malwares: []string{"huge Big Bang"}, label: "iAmSoSweet.zip", filetype: "zip"})
+				d.pushFilesToQuarantine(ctx)
+				d.submitFilesToDetect(ctx, 2)
 				sleep(10)
 				consoleLogger.Debug("trying a debug log")
-				d.pushEmailToMitigation(ctx, FakeEmailData{
-					malwares:   []string{"testphish"},
-					subject:    "PeRsO truc truc perso",
-					sender:     "tst@local.fr",
-					recipients: []string{"truc@far.away"},
-					size:       125,
-				})
-				d.pushEmailToMitigation(ctx, FakeEmailData{
-					malwares:   []string{"testmalware"},
-					subject:    "Very important thing ! open it",
-					sender:     "yet.another@mail.en",
-					recipients: []string{"prenom.nom@domain.fr", "azer.jklm@uiop.ee"},
-					size:       614,
-				})
-				d.pushEmailToMitigation(ctx, FakeEmailData{
-					malwares:   []string{"testother"},
-					subject:    "Other important content",
-					sender:     "yet.another@mail.en",
-					recipients: []string{"mister.pouet@domain.fr", "azeryuiop.jklmqsdf@uiop.ee"},
-					size:       2947,
-				})
-				d.pushEmailToMitigation(ctx, FakeEmailData{
-					malwares:   []string{"testanother"},
-					subject:    "Again an important thing ? don't wait !",
-					sender:     "yet.another@mail.en",
-					recipients: []string{"miss.pouet@domain.fr", "azerreza.jklmmlkj@uiop.ee"},
-					size:       63,
-				})
+				d.sendEmails(ctx)
 				logger.Error("could not process file test.txt", slog.String("error", "some error happened"))
 				d.metricCollecter.AddErrorItem()
 				sleep(10)
-				err := d.eventHandler.NotifyError(ctx, events.GMalwareError, errors.New("network error"))
-				if err != nil {
-					logger.Error("cannot push error event", slog.String("error", err.Error()))
-					consoleLogger.Warn("cannot push error event", slog.String("error", err.Error()))
-				}
+				d.submitFilesToDetect(ctx, 4)
+				d.notifyError(ctx)
 				sleep(30)
-				err = d.eventHandler.NotifyResolution(ctx, "resolved itself", events.GMalwareError)
-				if err != nil {
-					logger.Error("cannot push resolution event", slog.String("error", err.Error()))
-					consoleLogger.Warn("cannot push resolution event", slog.String("error", err.Error()))
-				}
+				d.submitFilesToDetect(ctx, 3)
+				d.notifyResolution(ctx)
 				sleep(30)
 			}
 		}
 	}(ctx)
+}
+
+func (d *DummyConnector) submitFilesToDetect(ctx context.Context, count int) {
+	for range count {
+		d.submitFileToDetect(ctx)
+	}
+}
+
+func (d *DummyConnector) notifyResolution(ctx context.Context) {
+	err := d.eventHandler.NotifyResolution(ctx, "resolved itself", events.GMalwareError)
+	if err != nil {
+		logger.Error("cannot push resolution event", slog.String("error", err.Error()))
+		consoleLogger.Warn("cannot push resolution event", slog.String("error", err.Error()))
+	}
+}
+
+func (d *DummyConnector) notifyError(ctx context.Context) {
+	err := d.eventHandler.NotifyError(ctx, events.GMalwareError, errors.New("network error"))
+	if err != nil {
+		logger.Error("cannot push error event", slog.String("error", err.Error()))
+		consoleLogger.Warn("cannot push error event", slog.String("error", err.Error()))
+	}
+}
+
+func (d *DummyConnector) pushFilesToQuarantine(ctx context.Context) {
+	d.pushFileToQuarantine(ctx, FakeFileData{malwares: []string{"test malware"}, label: "test.tst", filetype: "tst", size: 1024})
+	d.pushFileToQuarantine(ctx, FakeFileData{malwares: []string{"huge Big Bang"}, label: "iAmSoSweet.zip", filetype: "zip", size: 5242880})
+}
+
+func (d *DummyConnector) sendEmails(ctx context.Context) {
+	d.pushEmailToMitigation(ctx, FakeEmailData{
+		malwares:   []string{"testphish"},
+		subject:    "PeRsO truc truc perso",
+		sender:     "tst@local.fr",
+		recipients: []string{"truc@far.away"},
+		size:       125,
+	})
+	d.pushEmailToMitigation(ctx, FakeEmailData{
+		malwares:   []string{"testmalware"},
+		subject:    "Very important thing ! open it",
+		sender:     "yet.another@mail.en",
+		recipients: []string{"prenom.nom@domain.fr", "azer.jklm@uiop.ee"},
+		size:       614,
+	})
+	d.pushEmailToMitigation(ctx, FakeEmailData{
+		malwares:   []string{"testother"},
+		subject:    "Other important content",
+		sender:     "yet.another@mail.en",
+		recipients: []string{"mister.pouet@domain.fr", "azeryuiop.jklmqsdf@uiop.ee"},
+		size:       2947,
+	})
+	d.pushEmailToMitigation(ctx, FakeEmailData{
+		malwares:   []string{"testanother"},
+		subject:    "Again an important thing ? don't wait !",
+		sender:     "yet.another@mail.en",
+		recipients: []string{"miss.pouet@domain.fr", "azerreza.jklmmlkj@uiop.ee"},
+		size:       63,
+	})
 }
 
 func (d *DummyConnector) Start(ctx context.Context) (err error) {
