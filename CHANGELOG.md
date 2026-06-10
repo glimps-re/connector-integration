@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.8.1]
+
+### Fixed
+
+* metrics: add noop collecter
+
 ## [v0.8.0]
 
 ### Added
