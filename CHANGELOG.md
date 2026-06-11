@@ -4,7 +4,9 @@
 
 ### Fixed
 
-* metrics: add noop collecter
+* metrics:
+  * add noop collecter
+  * guard against nil detect client
 
 ## [v0.8.0]
 

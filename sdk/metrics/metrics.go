@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync/atomic"
 	"time"
@@ -67,6 +68,10 @@ func (m *MetricsCollector) SetDetectClient(client gdetect.GDetectSubmitter) {
 
 // GetAndStoreQuotas retrieves quotas from gdetect API and stores them.
 func (m *MetricsCollector) GetAndStoreQuotas(ctx context.Context) (err error) {
+	if m.detectClient == nil {
+		err = errors.New("detect client is nil")
+		return
+	}
 	getStatusCtx, getStatusCancel := context.WithTimeout(ctx, 15*time.Second) // on purpose large timeout
 	defer getStatusCancel()
 	status, err := m.detectClient.GetProfileStatus(getStatusCtx)

@@ -30,6 +30,7 @@ func Test_MetricsCollector_GetAndStoreQuotas(t *testing.T) {
 	type fields struct {
 		getProfileStatusError bool
 		zeroQuotas            bool
+		nilDetectClient       bool
 	}
 	type want struct {
 		dailyQuota          int64
@@ -42,6 +43,11 @@ func Test_MetricsCollector_GetAndStoreQuotas(t *testing.T) {
 		wantErr         bool
 		wantSpecificErr error
 	}{
+		{
+			name:    "ko nil Detect client",
+			fields:  fields{nilDetectClient: true},
+			wantErr: true,
+		},
 		{
 			name:            "ko GetProfileStatus error",
 			fields:          fields{getProfileStatusError: true},
@@ -84,6 +90,10 @@ func Test_MetricsCollector_GetAndStoreQuotas(t *testing.T) {
 
 			m := &MetricsCollector{
 				detectClient: mock,
+			}
+
+			if tt.fields.nilDetectClient {
+				m.detectClient = nil
 			}
 
 			err := m.GetAndStoreQuotas(t.Context())
