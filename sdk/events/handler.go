@@ -12,12 +12,13 @@ type EventHandler interface {
 	EventLogHandler
 	EventErrorHandler
 	EventMitigationHandler
+	EventStatusHandler
 }
 
 var _ EventHandler = &Handler{}
 
 type Event interface {
-	MitigationEvent | TaskEvent | LogEvent | ErrorEvent | ResolutionEvent
+	MitigationEvent | TaskEvent | LogEvent | ErrorEvent | ResolutionEvent | StatusEvent
 }
 
 type EventType string
@@ -28,6 +29,7 @@ const (
 	Log        EventType = "log"
 	Error      EventType = "error"
 	Resolution EventType = "resolution"
+	Status     EventType = "status"
 )
 
 type Notifier interface {

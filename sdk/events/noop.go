@@ -17,6 +17,10 @@ func (h NoopEventHandler) NotifyResolution(ctx context.Context, msg string, erro
 	return
 }
 
+func (h NoopEventHandler) NotifyStatus(ctx context.Context, status ConnectorLifecycleStatus) (err error) {
+	return
+}
+
 func (h NoopEventHandler) NotifyFileMitigation(ctx context.Context, action MitigationAction, elementID string, reason MitigationReason, info FileInfos) (err error) {
 	return
 }

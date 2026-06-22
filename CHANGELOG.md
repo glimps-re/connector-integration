@@ -1,5 +1,14 @@
 # Changelog
 
+## [unreleased]
+
+### Added
+
+* connector lifecycle status:
+  * `StatusEvent` / `status` event type for reporting `started`/`stopping`/`stopped`
+  * `EventHandler.NotifyStatus` to push lifecycle transitions
+  * `Stopping` connector status
+
 ## [v0.8.1]
 
 ### Fixed
