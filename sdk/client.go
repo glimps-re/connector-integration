@@ -67,6 +67,8 @@ type ConnectorStatus int
 const (
 	Started ConnectorStatus = iota
 	Stopped
+	// Stopping indicates the connector is draining in-flight analyses before it stops.
+	Stopping
 )
 
 // Connector must comply to this interface to be used with manager
@@ -182,22 +184,26 @@ func (c ConnectorManagerClient) Start(ctx context.Context, connector Connector) 
 					taskError = fmt.Sprintf("error reconfiguring connector, error: %v\n", err)
 				}
 			case ActionStop:
-				if connector.Status() == Stopped {
+				switch connector.Status() {
+				case Stopped:
 					taskError = "error stopping connector, error: connector is already stopped"
-					break
-				}
-				err := connector.Stop(ctx)
-				if err != nil {
-					taskError = fmt.Sprintf("error stopping connector, error: %v\n", err)
+				case Stopping:
+					taskError = "error stopping connector, error: connector is already stopping"
+				default:
+					if err := connector.Stop(ctx); err != nil {
+						taskError = fmt.Sprintf("error stopping connector, error: %v\n", err)
+					}
 				}
 			case ActionStart:
-				if connector.Status() == Started {
+				switch connector.Status() {
+				case Started:
 					taskError = "error starting connector, error: connector is already started"
-					break
-				}
-				err := connector.Start(ctx)
-				if err != nil {
-					taskError = fmt.Sprintf("error start connector, error: %s", err)
+				case Stopping:
+					taskError = "error starting connector, error: connector is stopping, retry once stopped"
+				default:
+					if err := connector.Start(ctx); err != nil {
+						taskError = fmt.Sprintf("error start connector, error: %s", err)
+					}
 				}
 			case ActionRestore:
 				restoreAction := new(RestoreActionContent)
@@ -253,6 +259,8 @@ func (c ConnectorManagerClient) Notify(ctx context.Context, event any) (err erro
 		reqBody.EventType = events.Error
 	case events.ResolutionEvent:
 		reqBody.EventType = events.Resolution
+	case events.StatusEvent:
+		reqBody.EventType = events.Status
 	default:
 		err = errors.New("invalid type")
 		return
