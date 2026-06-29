@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.8.2]
+
+### Changed
+
+* docs(host): clarify extract_workers field
+
 ## [v0.8.1]
 
 ### Fixed

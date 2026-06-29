@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
-	github.com/glimps-re/go-gdetect v1.6.0
+	github.com/glimps-re/go-gdetect v1.6.5
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.30.1
