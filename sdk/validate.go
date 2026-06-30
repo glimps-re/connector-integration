@@ -8,12 +8,34 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/glimps-re/connector-integration/sdk/events"
+	"github.com/glimps-re/connector-integration/sdk/validation"
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
 	"github.com/labstack/echo/v4"
 )
+
+var validConnectorTypes = []string{DummyKey, M365Key, ICAPKey, SharepointKey, HostKey}
+
+// ConnectorTypeTag is the validator tag validating a connector type.
+const ConnectorTypeTag = "connector_type"
+
+// CustomValidations returns every enum validation exposed by the SDK, keyed by
+// its validator tag. Consumers can register them on their own validator with
+// validation.Register instead of relying on DefaultValidator.
+func CustomValidations() map[string]validation.EnumValidation {
+	return map[string]validation.EnumValidation{
+		ConnectorTypeTag:             validation.NewEnumValidation(validConnectorTypes),
+		events.MitigationActionTag:   events.MitigationAction("").Validation(),
+		events.MitigationReasonTag:   events.MitigationReason("").Validation(),
+		events.MitigationInfoTypeTag: events.MitigationInfoType("").Validation(),
+		events.EventTypeTag:          events.EventType("").Validation(),
+		TaskActionTag:                ActionType("").Validation(),
+		TaskStatusTag:                TaskStatus("").Validation(),
+	}
+}
 
 // StrictJSONSerializer implements JSON encoding using encoding/json with DisallowUnknownFields
 type StrictJSONSerializer struct{}
@@ -52,7 +74,7 @@ func DefaultValidator() (v *defaultValidator, err error) {
 		}
 		return name
 	})
-	err = validate.RegisterValidation("connector_type", ValidateConnectorType)
+	err = validation.Register(validate, trans, CustomValidations())
 	if err != nil {
 		return
 	}
@@ -62,20 +84,6 @@ func DefaultValidator() (v *defaultValidator, err error) {
 	}
 	v = &defaultValidator{Validator: validate, Trans: trans}
 	return
-}
-
-var validConnectorTypes = map[string]bool{
-	DummyKey:      true,
-	SharepointKey: true,
-	ICAPKey:       true,
-	M365Key:       true,
-	HostKey:       true,
-}
-
-func ValidateConnectorType(fl validator.FieldLevel) bool {
-	value := fl.Field().String()
-	valid, ok := validConnectorTypes[value]
-	return valid && ok
 }
 
 type defaultValidator struct {

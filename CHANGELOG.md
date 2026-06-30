@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.8.3]
+
+### Added
+
+* custom enum validators
+
 ## [v0.8.2]
 
 ### Changed
