@@ -3,6 +3,8 @@ package events
 import (
 	"context"
 	"time"
+
+	"github.com/glimps-re/connector-integration/sdk/validation"
 )
 
 type EventMitigationHandler interface {
@@ -12,7 +14,7 @@ type EventMitigationHandler interface {
 }
 
 type MitigationEvent struct {
-	Action   MitigationAction   `json:"type" validate:"required,oneof=quarantine block remove log"`
+	Action   MitigationAction   `json:"type" validate:"required,mitigation_action"`
 	InfoType MitigationInfoType `json:"info_type"`
 	Time     int64              `json:"time"`
 
@@ -35,6 +37,17 @@ const (
 	ActionLog MitigationAction = "log"
 )
 
+func (MitigationAction) Values() []MitigationAction {
+	return []MitigationAction{ActionQuarantine, ActionBlock, ActionRemove, ActionLog}
+}
+
+// MitigationActionTag is the validator tag validating a MitigationAction.
+const MitigationActionTag = "mitigation_action"
+
+func (MitigationAction) Validation() validation.EnumValidation {
+	return validation.NewEnumValidation(MitigationAction("").Values())
+}
+
 // Define what triggered the mitigation
 type MitigationReason string
 
@@ -55,6 +68,17 @@ const (
 	ReasonFilePath MitigationReason = "filepath"
 )
 
+func (MitigationReason) Values() []MitigationReason {
+	return []MitigationReason{ReasonMalware, ReasonPhishing, ReasonError, ReasonInvalid, ReasonTooBig, ReasonFileType, ReasonFilePath}
+}
+
+// MitigationReasonTag is the validator tag validating a MitigationReason.
+const MitigationReasonTag = "mitigation_reason"
+
+func (MitigationReason) Validation() validation.EnumValidation {
+	return validation.NewEnumValidation(MitigationReason("").Values())
+}
+
 type MitigationInfoType string
 
 const (
@@ -62,6 +86,17 @@ const (
 	InfoTypeEmail MitigationInfoType = "email"
 	InfoTypeURL   MitigationInfoType = "url"
 )
+
+func (MitigationInfoType) Values() []MitigationInfoType {
+	return []MitigationInfoType{InfoTypeFile, InfoTypeEmail, InfoTypeURL}
+}
+
+// MitigationInfoTypeTag is the validator tag validating a MitigationInfoType.
+const MitigationInfoTypeTag = "mitigation_infotype"
+
+func (MitigationInfoType) Validation() validation.EnumValidation {
+	return validation.NewEnumValidation(MitigationInfoType("").Values())
+}
 
 type CommonDetails struct {
 	Malwares           []string `json:"malwares"`

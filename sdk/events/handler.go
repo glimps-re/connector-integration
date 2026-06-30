@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/glimps-re/connector-integration/sdk/metrics"
+	"github.com/glimps-re/connector-integration/sdk/validation"
 )
 
 type EventHandler interface {
@@ -29,6 +30,17 @@ const (
 	Error      EventType = "error"
 	Resolution EventType = "resolution"
 )
+
+func (EventType) Values() []EventType {
+	return []EventType{TaskAck, Mitigation, Log, Error, Resolution}
+}
+
+// EventTypeTag is the validator tag validating an EventType.
+const EventTypeTag = "event_type"
+
+func (EventType) Validation() validation.EnumValidation {
+	return validation.NewEnumValidation(EventType("").Values())
+}
 
 type Notifier interface {
 	// event MUST be an `Event``
