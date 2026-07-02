@@ -656,6 +656,7 @@ func InitDefault(connectorType string) (config any, err error) {
 			Workers:                  4,
 			ExtractWorkers:           2,
 			MaxFileSize:              "100MiB",
+			ExtractMinSize:           "8KB",
 			RecursiveExtractMaxDepth: 10,
 			RecursiveExtractMaxSize:  "5GB",
 			RecursiveExtractMaxFiles: 10000,
