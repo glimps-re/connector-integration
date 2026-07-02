@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.8.4]
+
+### Added
+
+* HostConnector config : if size at or below `extract_min_size` (default to 8KB) file is directly send to analyse without extraction 
+
 ## [v0.8.3]
 
 ### Added
