@@ -18,8 +18,12 @@ func newTestMetricsCollector(cm ConnectorMetrics) (m *MetricsCollector) {
 	m.sizeProcessed.Store(cm.SizeProcessed)
 	m.itemsMitigated.Store(cm.ItemsMitigated)
 	m.itemsError.Store(cm.ItemsError)
-	m.dailyQuota.Store(cm.DailyQuota)
-	m.availableDailyQuota.Store(cm.AvailableDailyQuota)
+	m.monthlySubmissionQuota.Store(cm.MonthlySubmissionQuota)
+	m.availableMonthlySubmissions.Store(cm.AvailableMonthlySubmissions)
+	m.monthlyVolumeQuota.Store(cm.MonthlyVolumeQuota)
+	m.availableMonthlyVolume.Store(cm.AvailableMonthlyVolume)
+	m.parallelSubmissionQuota.Store(cm.ParallelSubmissionQuota)
+	m.availableParallel.Store(cm.AvailableParallel)
 	m.lastStart.Store(cm.LastStart)
 	return
 }
@@ -33,8 +37,12 @@ func Test_MetricsCollector_GetAndStoreQuotas(t *testing.T) {
 		nilDetectClient       bool
 	}
 	type want struct {
-		dailyQuota          int64
-		availableDailyQuota int64
+		monthlySubmissionQuota      int64
+		availableMonthlySubmissions int64
+		monthlyVolumeQuota          int64
+		availableMonthlyVolume      int64
+		parallelSubmissionQuota     int64
+		availableParallel           int64
 	}
 	tests := []struct {
 		name            string
@@ -57,8 +65,12 @@ func Test_MetricsCollector_GetAndStoreQuotas(t *testing.T) {
 		{
 			name: "ok quotas stored",
 			want: want{
-				dailyQuota:          100,
-				availableDailyQuota: 50,
+				monthlySubmissionQuota:      100,
+				availableMonthlySubmissions: 50,
+				monthlyVolumeQuota:          1000,
+				availableMonthlyVolume:      500,
+				parallelSubmissionQuota:     10,
+				availableParallel:           5,
 			},
 		},
 		{
@@ -80,8 +92,12 @@ func Test_MetricsCollector_GetAndStoreQuotas(t *testing.T) {
 					}
 					if !tt.fields.zeroQuotas {
 						status = gdetect.ProfileStatus{
-							DailyQuota:          100,
-							AvailableDailyQuota: 50,
+							MonthlySubmissionQuota:      100,
+							AvailableMonthlySubmissions: 50,
+							MonthlyVolumeQuota:          1000,
+							AvailableMonthlyVolume:      500,
+							ParallelSubmissionQuota:     10,
+							AvailableParallel:           5,
 						}
 					}
 					return
@@ -112,11 +128,23 @@ func Test_MetricsCollector_GetAndStoreQuotas(t *testing.T) {
 				return
 			}
 
-			if got := m.dailyQuota.Load(); got != tt.want.dailyQuota {
-				t.Errorf("dailyQuota = %v, want %v", got, tt.want.dailyQuota)
+			if got := m.monthlySubmissionQuota.Load(); got != tt.want.monthlySubmissionQuota {
+				t.Errorf("monthlySubmissionQuota = %v, want %v", got, tt.want.monthlySubmissionQuota)
 			}
-			if got := m.availableDailyQuota.Load(); got != tt.want.availableDailyQuota {
-				t.Errorf("availableDailyQuota = %v, want %v", got, tt.want.availableDailyQuota)
+			if got := m.availableMonthlySubmissions.Load(); got != tt.want.availableMonthlySubmissions {
+				t.Errorf("availableMonthlySubmissions = %v, want %v", got, tt.want.availableMonthlySubmissions)
+			}
+			if got := m.monthlyVolumeQuota.Load(); got != tt.want.monthlyVolumeQuota {
+				t.Errorf("monthlyVolumeQuota = %v, want %v", got, tt.want.monthlyVolumeQuota)
+			}
+			if got := m.availableMonthlyVolume.Load(); got != tt.want.availableMonthlyVolume {
+				t.Errorf("availableMonthlyVolume = %v, want %v", got, tt.want.availableMonthlyVolume)
+			}
+			if got := m.parallelSubmissionQuota.Load(); got != tt.want.parallelSubmissionQuota {
+				t.Errorf("parallelSubmissionQuota = %v, want %v", got, tt.want.parallelSubmissionQuota)
+			}
+			if got := m.availableParallel.Load(); got != tt.want.availableParallel {
+				t.Errorf("availableParallel = %v, want %v", got, tt.want.availableParallel)
 			}
 		})
 	}
@@ -139,38 +167,54 @@ func Test_MetricsCollector_GetAndReset(t *testing.T) {
 			name: "ok only gauges set",
 			fields: fields{
 				initialMetrics: ConnectorMetrics{
-					DailyQuota:          200,
-					AvailableDailyQuota: 150,
-					LastStart:           5000,
+					MonthlySubmissionQuota:      200,
+					AvailableMonthlySubmissions: 150,
+					MonthlyVolumeQuota:          2000,
+					AvailableMonthlyVolume:      1500,
+					ParallelSubmissionQuota:     20,
+					AvailableParallel:           15,
+					LastStart:                   5000,
 				},
 			},
 			want: ConnectorMetrics{
-				DailyQuota:          200,
-				AvailableDailyQuota: 150,
-				LastStart:           5000,
+				MonthlySubmissionQuota:      200,
+				AvailableMonthlySubmissions: 150,
+				MonthlyVolumeQuota:          2000,
+				AvailableMonthlyVolume:      1500,
+				ParallelSubmissionQuota:     20,
+				AvailableParallel:           15,
+				LastStart:                   5000,
 			},
 		},
 		{
 			name: "ok counters reset after read",
 			fields: fields{
 				initialMetrics: ConnectorMetrics{
-					ItemsProcessed:      3,
-					SizeProcessed:       1500,
-					ItemsMitigated:      2,
-					ItemsError:          1,
-					DailyQuota:          100,
-					AvailableDailyQuota: 50,
-					LastStart:           1000,
+					ItemsProcessed:              3,
+					SizeProcessed:               1500,
+					ItemsMitigated:              2,
+					ItemsError:                  1,
+					MonthlySubmissionQuota:      100,
+					AvailableMonthlySubmissions: 50,
+					MonthlyVolumeQuota:          1000,
+					AvailableMonthlyVolume:      500,
+					ParallelSubmissionQuota:     10,
+					AvailableParallel:           5,
+					LastStart:                   1000,
 				},
 			},
 			want: ConnectorMetrics{
-				ItemsProcessed:      3,
-				SizeProcessed:       1500,
-				ItemsMitigated:      2,
-				ItemsError:          1,
-				DailyQuota:          100,
-				AvailableDailyQuota: 50,
-				LastStart:           1000,
+				ItemsProcessed:              3,
+				SizeProcessed:               1500,
+				ItemsMitigated:              2,
+				ItemsError:                  1,
+				MonthlySubmissionQuota:      100,
+				AvailableMonthlySubmissions: 50,
+				MonthlyVolumeQuota:          1000,
+				AvailableMonthlyVolume:      500,
+				ParallelSubmissionQuota:     10,
+				AvailableParallel:           5,
+				LastStart:                   1000,
 			},
 		},
 	}
@@ -200,11 +244,23 @@ func Test_MetricsCollector_GetAndReset(t *testing.T) {
 			}
 
 			// Verify gauges were NOT reset
-			if m.dailyQuota.Load() != tt.fields.initialMetrics.DailyQuota {
-				t.Errorf("dailyQuota should not be reset, got %v", m.dailyQuota.Load())
+			if m.monthlySubmissionQuota.Load() != tt.fields.initialMetrics.MonthlySubmissionQuota {
+				t.Errorf("monthlySubmissionQuota should not be reset, got %v", m.monthlySubmissionQuota.Load())
 			}
-			if m.availableDailyQuota.Load() != tt.fields.initialMetrics.AvailableDailyQuota {
-				t.Errorf("availableDailyQuota should not be reset, got %v", m.availableDailyQuota.Load())
+			if m.availableMonthlySubmissions.Load() != tt.fields.initialMetrics.AvailableMonthlySubmissions {
+				t.Errorf("availableMonthlySubmissions should not be reset, got %v", m.availableMonthlySubmissions.Load())
+			}
+			if m.monthlyVolumeQuota.Load() != tt.fields.initialMetrics.MonthlyVolumeQuota {
+				t.Errorf("monthlyVolumeQuota should not be reset, got %v", m.monthlyVolumeQuota.Load())
+			}
+			if m.availableMonthlyVolume.Load() != tt.fields.initialMetrics.AvailableMonthlyVolume {
+				t.Errorf("availableMonthlyVolume should not be reset, got %v", m.availableMonthlyVolume.Load())
+			}
+			if m.parallelSubmissionQuota.Load() != tt.fields.initialMetrics.ParallelSubmissionQuota {
+				t.Errorf("parallelSubmissionQuota should not be reset, got %v", m.parallelSubmissionQuota.Load())
+			}
+			if m.availableParallel.Load() != tt.fields.initialMetrics.AvailableParallel {
+				t.Errorf("availableParallel should not be reset, got %v", m.availableParallel.Load())
 			}
 			if m.lastStart.Load() != tt.fields.initialMetrics.LastStart {
 				t.Errorf("lastStart should not be reset, got %v", m.lastStart.Load())
