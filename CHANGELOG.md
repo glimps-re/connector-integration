@@ -1,10 +1,14 @@
 # Changelog
 
-## [v0.8.4]
+## [v0.9.0]
 
 ### Added
 
 * HostConnector config : if size at or below `extract_min_size` (default to 8KB) file is directly send to analyse without extraction 
+
+### Changed
+
+* /metrics now return new quota
 
 ## [v0.8.3]
 
