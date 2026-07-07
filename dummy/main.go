@@ -23,7 +23,7 @@ var LogLevel = &slog.LevelVar{}
 
 var (
 	consoleLogger = slog.New(slog.DiscardHandler)
-	logger        = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: LogLevel}))
+	logger        = slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: LogLevel}))
 )
 
 func main() {
@@ -217,23 +217,32 @@ func (d *DummyConnector) submitFileToDetect(ctx context.Context) {
 	}
 }
 
-func getSpeedRate() (speedRate int) {
-	speedRate, err := strconv.Atoi(os.Getenv("SPEED_RATE"))
+func getSpeedRate() (speedRate float64) {
+	speedRate, err := strconv.ParseFloat(os.Getenv("SPEED_RATE"), 64)
 	if err != nil {
 		speedRate = 1
 	}
 	return
 }
 
+func getIterationAmount() (iterationAmount int) {
+	iterationAmount, err := strconv.Atoi(os.Getenv("ITERATION_AMOUNT"))
+	if err != nil {
+		iterationAmount = -1
+	}
+	return
+}
+
 func sleep(seconds int) {
 	speedRate := getSpeedRate()
-	duration := time.Second * time.Duration(seconds*speedRate)
+	duration := time.Duration(float64(seconds) * speedRate * float64(time.Second))
 	time.Sleep(duration)
 }
 
 func (d *DummyConnector) Launch(ctx context.Context) {
+	iterationAmount := getIterationAmount()
 	go func(ctx context.Context) {
-		for {
+		for count := 0; ; {
 			select {
 			case <-ctx.Done():
 				logger.Warn("connector stopped, context done")
@@ -242,6 +251,12 @@ func (d *DummyConnector) Launch(ctx context.Context) {
 				if d.stopped {
 					continue
 				}
+				if iterationAmount != -1 && count >= iterationAmount {
+					logger.Debug("All iterations done")
+					sleep(100000)
+					continue
+				}
+				count++
 				consoleLogger.Info("adding something to quarantine", slog.String("root", "root value"), slog.GroupAttrs("sub", slog.String("test", "test value")))
 				d.pushFilesToQuarantine(ctx)
 				d.submitFilesToDetect(ctx, 2)
