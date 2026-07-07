@@ -9,6 +9,12 @@ import (
 	"github.com/go-viper/mapstructure/v2"
 )
 
+// Duration is a time.Duration serialized as its string form (e.g. "30s").
+//
+// MarshalJSON must be on a value receiver, otherwise a Duration copied into an
+// any is marshaled as raw nanoseconds.
+//
+//nolint:recvcheck // value MarshalJSON is required, see above
 type Duration time.Duration
 
 func (d *Duration) String() string {
