@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+* `sdk/telemetry`: shared, logger-agnostic OpenTelemetry provider package (traces, metrics with a Prometheus `/metrics` endpoint, logs) with OTLP export and W3C trace-context propagation, configured from `OTEL_*`. Opt-in import: connectors that skip it pull in no OpenTelemetry dependency.
+* `sdk/telemetry`: process-local trace correlation (`WithCorrelation`, `NewCorrelationSpanProcessor`).
+* `sdk/telemetry/slogotel`: slog bridge — trace-id fields on stdout plus an OTLP log export.
+* `sdk/gmconv`: canonical `gmalware.*` attribute keys and constructors, shared as a cross-service contract.
+
 ## [v0.9.0]
 
 ### Added
