@@ -9,6 +9,17 @@ import (
 	"github.com/go-viper/mapstructure/v2"
 )
 
+// Duration is a time.Duration serialized as its string form (e.g. "30s").
+//
+// Its methods mix value and pointer receivers on purpose, exactly as time.Time
+// does: MarshalJSON has to stay on the value receiver because a Duration is
+// marshaled by value, both as a config struct field and inside an any
+// (ConfigField.DefaultValue). encoding/json skips a pointer-receiver
+// MarshalJSON on a non-addressable value, which would silently emit raw
+// nanoseconds (300000000000) instead of "5m0s". Set and UnmarshalJSON have to
+// stay on the pointer receiver to mutate the value.
+//
+//nolint:recvcheck // mixed receivers are required, see above
 type Duration time.Duration
 
 func (d *Duration) String() string {

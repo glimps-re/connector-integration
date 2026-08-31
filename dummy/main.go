@@ -23,7 +23,7 @@ var LogLevel = &slog.LevelVar{}
 
 var (
 	consoleLogger = slog.New(slog.DiscardHandler)
-	logger        = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: LogLevel}))
+	logger        = slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: LogLevel}))
 )
 
 func main() {
@@ -148,13 +148,19 @@ type FakeFileData struct {
 
 func (d *DummyConnector) pushFileToQuarantine(ctx context.Context, fakeFileData FakeFileData) {
 	fmt.Println("adding something to quarantine")
+	d.pushFileMitigation(ctx, events.ActionQuarantine, events.ReasonMalware, fakeFileData)
+}
+
+// pushFileMitigation emits a file mitigation for any action / reason pair. The
+// element is kept in d.quarantine so it can be released from the console.
+func (d *DummyConnector) pushFileMitigation(ctx context.Context, action events.MitigationAction, reason events.MitigationReason, fakeFileData FakeFileData) {
 	id, err := genID()
 	if err != nil {
 		logger.Error("cannot generate id", slog.String("error", err.Error()))
 		panic(err)
 	}
 	d.quarantine[id] = true
-	err = d.eventHandler.NotifyFileMitigation(ctx, events.ActionQuarantine, id, events.ReasonMalware, events.FileInfos{
+	err = d.eventHandler.NotifyFileMitigation(ctx, action, id, reason, events.FileInfos{
 		CommonDetails: events.CommonDetails{
 			Malwares:     fakeFileData.malwares,
 			GmalwareURLs: []string{"fake.test.local"},
@@ -217,23 +223,103 @@ func (d *DummyConnector) submitFileToDetect(ctx context.Context) {
 	}
 }
 
-func getSpeedRate() (speedRate int) {
-	speedRate, err := strconv.Atoi(os.Getenv("SPEED_RATE"))
+func getSpeedRate() (speedRate float64) {
+	speedRate, err := strconv.ParseFloat(os.Getenv("SPEED_RATE"), 64)
 	if err != nil {
 		speedRate = 1
 	}
 	return
 }
 
+func getIterationAmount() (iterationAmount int) {
+	iterationAmount, err := strconv.Atoi(os.Getenv("ITERATION_AMOUNT"))
+	if err != nil {
+		iterationAmount = -1
+	}
+	return
+}
+
+func getEmitAllMitigationReasons() (emitAll bool) {
+	emitAll, err := strconv.ParseBool(os.Getenv("EMIT_ALL_MITIGATION_REASONS"))
+	if err != nil {
+		emitAll = false
+	}
+	return
+}
+
+// mitigationReasonVolumes gives the number of mitigations emitted for each
+// mitigation reason when EMIT_ALL_MITIGATION_REASONS is set.
+//
+// The values are all distinct on purpose, so a test can assert the reason ->
+// count mapping and not merely the presence of every reason. The console merges
+// invalid into error, hence it displays error = 3 + 4 = 7; filepath is 8 and not
+// 7 so its displayed value stays distinct from that 7.
+var mitigationReasonVolumes = map[events.MitigationReason]int{
+	events.ReasonMalware:  1,
+	events.ReasonPhishing: 2,
+	events.ReasonError:    3,
+	events.ReasonInvalid:  4,
+	events.ReasonTooBig:   5,
+	events.ReasonFileType: 6,
+	events.ReasonFilePath: 8,
+}
+
+// emitAllMitigationReasons emits mitigations for every reason of the SDK
+// contract, using the volumes of mitigationReasonVolumes.
+//
+// It is a one shot, meant to be called once at startup and outside of the
+// Launch() loop: every mitigation also increments items_mitigated_total, so
+// emitting them per iteration would break the scenarios counting mitigations.
+func (d *DummyConnector) emitAllMitigationReasons(ctx context.Context) {
+	logger.Info("emitting all mitigation reasons")
+	for _, reason := range events.MitigationReason("").Values() {
+		count, ok := mitigationReasonVolumes[reason]
+		if !ok {
+			logger.Error("no mitigation volume defined for reason", slog.String("reason", string(reason)))
+			continue
+		}
+		for index := 1; index <= count; index++ {
+			d.emitMitigationForReason(ctx, reason, index)
+		}
+	}
+}
+
+// emitMitigationForReason emits a single mitigation for the given reason. Only
+// the reason and the number of mitigations matter to the tests: phishing is sent
+// as a blocked email, every other reason as a quarantined file, which is what
+// the dummy already does for its regular mitigations.
+func (d *DummyConnector) emitMitigationForReason(ctx context.Context, reason events.MitigationReason, index int) {
+	if reason == events.ReasonPhishing {
+		d.pushEmailToMitigation(ctx, FakeEmailData{
+			malwares:   []string{"test-" + string(reason)},
+			subject:    fmt.Sprintf("all-reasons %s sample %d", reason, index),
+			sender:     "all.reasons@fake.test.local",
+			recipients: []string{"victim@fake.test.local"},
+			size:       int64(128 * index),
+		})
+		return
+	}
+	d.pushFileMitigation(ctx, events.ActionQuarantine, reason, FakeFileData{
+		malwares: []string{"test-" + string(reason)},
+		label:    fmt.Sprintf("all-reasons/%s/sample-%02d.tst", reason, index),
+		filetype: "tst",
+		size:     int64(1024 * index),
+	})
+}
+
 func sleep(seconds int) {
 	speedRate := getSpeedRate()
-	duration := time.Second * time.Duration(seconds*speedRate)
+	duration := time.Duration(float64(seconds) * speedRate * float64(time.Second))
 	time.Sleep(duration)
 }
 
 func (d *DummyConnector) Launch(ctx context.Context) {
+	iterationAmount := getIterationAmount()
+	if getEmitAllMitigationReasons() {
+		d.emitAllMitigationReasons(ctx)
+	}
 	go func(ctx context.Context) {
-		for {
+		for count := 0; ; {
 			select {
 			case <-ctx.Done():
 				logger.Warn("connector stopped, context done")
@@ -242,6 +328,12 @@ func (d *DummyConnector) Launch(ctx context.Context) {
 				if d.stopped {
 					continue
 				}
+				if iterationAmount != -1 && count >= iterationAmount {
+					logger.Debug("All iterations done")
+					sleep(100000)
+					continue
+				}
+				count++
 				consoleLogger.Info("adding something to quarantine", slog.String("root", "root value"), slog.GroupAttrs("sub", slog.String("test", "test value")))
 				d.pushFilesToQuarantine(ctx)
 				d.submitFilesToDetect(ctx, 2)

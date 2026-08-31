@@ -538,7 +538,7 @@ func getConfigFields(config any) (configFields []ConfigField, err error) {
 		if !ok {
 			continue
 		}
-		fieldKey := strings.Split(jsonTags, ",")[0]
+		fieldKey, _, _ := strings.Cut(jsonTags, ",")
 
 		fieldDesc, _ := field.Tag.Lookup("desc")
 
