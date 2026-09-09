@@ -649,6 +649,7 @@ func InitDefault(connectorType string) (config any, err error) {
 			Quarantine: HostQuarantineConfig{
 				Password: "infected",
 				Location: "/var/lib/gmhost",
+				Format:   "tar",
 			},
 			Monitoring: HostMonitoringConfig{
 				ModificationDelay: Duration(time.Second * 30),

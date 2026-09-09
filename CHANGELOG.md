@@ -12,6 +12,7 @@
 ### Added
 
 * HostConnector config : if size at or below `extract_min_size` (default to 8KB) file is directly send to analyse without extraction 
+* HostConnector config: `quarantine.format` (`tar` default, `zip`) selects the container format for newly quarantined files
 
 ### Changed
 
