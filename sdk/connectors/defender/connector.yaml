@@ -1,0 +1,148 @@
+name: Microsoft Defender for Endpoint
+description: |
+  Polls Microsoft Defender for Endpoint alerts, collects the files they name from the endpoint over
+  Live Response, submits them to GLIMPS Malware Detect and writes the verdict back on the alert.
+  One connector serves one Defender tenant.
+mitigation_info_type: "file"
+setup_steps:
+  - name: Create the App Registration
+    description: |
+      Requirements:
+        * A Microsoft Entra account with one of these roles: Application Developer,
+          Cloud Application Administrator or Global Administrator
+        * A Microsoft Defender for Endpoint licence on the tenant
+
+      1. In the [Azure portal](https://portal.azure.com), open **Microsoft Entra ID** ->
+         **App registrations** -> **New registration**. Name it, leave the redirect URI empty
+         and register it.
+      2. On the app **Overview** page, keep the **Application (client) ID** and the
+         **Directory (tenant) ID**: they are this connector's `ClientID` and `TenantID`.
+      3. Open **Certificates & secrets** -> **New client secret**, then keep the generated
+         value: it is this connector's `ClientSecret`, and it is shown only once.
+
+  - name: Grant the API permissions
+    description: |
+      On the App Registration, open **API permissions** -> **Add a permission** ->
+      **APIs my organization uses** -> **WindowsDefenderATP**, then **Application permissions**,
+      and add:
+
+      | Permission | Purpose |
+      |------------|---------|
+      | `Alert.ReadWrite.All` | Read alerts and write the verdict on them |
+      | `File.Read.All` | Retrieve the file evidence an alert names |
+      | `Machine.Read.All` | Check that the endpoint is reachable |
+      | `Machine.LiveResponse` | Start the Live Response session that collects the file |
+      | `Machine.ReadWrite.All` | Retrieve what that session collected (see note) |
+      | `Machine.StopAndQuarantine` | Only needed for `QuarantineFile` |
+      | `Ti.ReadWrite.All` | Only needed for `PostIndicator` |
+
+      Then click **Grant admin consent for \<tenant\>**: an application permission is unusable
+      until an administrator consents to it.
+
+      > **Note on `Machine.ReadWrite.All`**: collecting a file is two calls, and they do not
+      > require the same permission. `POST /api/machines/{id}/runliveresponse` accepts
+      > `Machine.LiveResponse`, but
+      > [Get live response results](https://learn.microsoft.com/en-us/defender-endpoint/api/get-live-response-result)
+      > documents `Machine.ReadWrite.All` as the only *Application* permission for
+      > `GetLiveResponseResultDownloadLink` - `Machine.LiveResponse` is listed there under
+      > *Delegated* only. Granting `Machine.LiveResponse` alone starts the collection and then
+      > cannot fetch what it collected.
+
+  - name: Enable Live Response on the tenant
+    description: |
+      In the [Microsoft Defender portal](https://security.microsoft.com), open **Settings** ->
+      **Endpoints** -> **Advanced features** and enable **Live Response**, plus
+      **Live Response for servers** if the alerts to process come from servers.
+
+      Without it every file collection is refused, and no alert can reach a verdict.
+
+  - name: Choose what is written on an alert
+    description: |
+      A verdict always produces a comment on the alert, carrying the GLIMPS analysis report link
+      and, when only part of the alert's files could be analyzed, what the verdict does and does
+      not cover.
+
+      `CommentOnly` decides whether the alert's own triage fields are set as well:
+
+      - **unselected** (default): the alert is also classified - `TruePositive` / `Malware` on a
+        detection, `FalsePositive` / `NotMalicious` when no malware is found. This closes the
+        alert's triage, so it is the mode that saves an analyst work.
+      - **selected**: the comment is the only thing written. Choose this while evaluating the
+        connector, or when your own process owns the classification of an alert.
+
+  - name: Choose the response actions
+    description: |
+      Both are off by default: the connector writes a verdict and touches nothing on the endpoint.
+
+      - `QuarantineFile`: on a malware verdict, ask Defender to stop and quarantine the file on the
+        endpoint it was collected from. Requires `Machine.StopAndQuarantine`. A file Defender had
+        already prevented is not quarantined again - it is no longer at the reported path.
+      - `PostIndicator`: on a malware verdict, post the file's hash as a Defender threat indicator,
+        so the whole tenant acts on it. Requires `Ti.ReadWrite.All`.
+      - `IndicatorResponseAction` then decides what Defender does when that indicator is matched
+        elsewhere: `Alert` (default), `Audit`, `Warn`, `Block`, `BlockAndRemediate` or
+        `AlertAndBlock`.
+
+      Note: Defender's remaining indicator action, `Allowed`, is deliberately not offered. An
+      indicator is only ever posted for a file GLIMPS confirmed as malware, so allow-listing that
+      hash tenant-wide would be a mistake.
+
+      Restoring a quarantined file is **not** possible from this console: Defender exposes no API
+      for it, so a restore is done from the Microsoft Defender portal.
+
+  - name: Choose which alerts are processed
+    description: |
+      The connector only ever looks at alerts that name a file, and skips any it has already
+      written a verdict on.
+
+      - `ProcessResolvedAlerts`: whether alerts already resolved in Defender are analyzed too. Off
+        by default - a resolved alert has been triaged by someone, so a second verdict on it is
+        usually noise.
+      - `AlertLookback`: how far back the **first** poll of a run reaches, e.g. `48h`. Left empty,
+        the connector starts from the moment it starts and only ever sees new alerts. Set it to
+        backfill a stretch of existing alerts once.
+
+      `AlertLookback` is not a retry window. An alert the connector could not settle - an offline
+      endpoint, a throttled API - is retried on its own, roughly hourly, for up to 36 hours.
+
+  - name: Size the polling and the collection
+    description: |
+      The defaults suit a tenant of any size and are worth leaving alone unless something below
+      applies.
+
+      - `PollInterval` (default `1m`): how often Defender is asked for new alerts. Windows overlap
+        by five minutes on purpose, because Defender stamps an alert's creation time before the
+        alert becomes queryable.
+      - `WorkerNb` (default `20`): how many alerts are processed at once. Defender allows 50
+        concurrent Live Response sessions and one per device, so raising this past 50 buys nothing.
+      - `DownloadTimeout` (default `2h30m`): the budget for collecting one file, which is mostly
+        the wait for an offline endpoint to come back. Defender itself queues a session for 2 hours
+        and then gives the transfer 30 minutes, which is where the default comes from. It must stay
+        **under 3h30m**: past that, the retry attempts an alert is allowed no longer fit inside the
+        36 hour window it is retried in, and the connector refuses to start.
+      - `HTTPTimeout` (default `30s`): the budget for one Defender API call, file transfers
+        excluded. Raise it only for a slow network path.
+      - `GMalwareTimeout` (default `5m`): how long one GLIMPS analysis is waited on.
+
+      Defender throttles every API used here at 100 calls per minute and 1500 per hour, per tenant
+      per application. The connector enforces both itself, so these settings cannot get the tenant
+      throttled.
+launch_steps:
+  - name: Run docker compose
+    description: |
+      Requirements:
+        * A server with network access to `login.microsoftonline.com`, the Defender API, the
+          GLIMPS Malware Detect API and this console, with
+          [docker installed](https://docs.docker.com/engine/install/) and
+          [docker compose installed](https://docs.docker.com/compose/install/linux/)
+        * The generated `docker-compose.yaml` file
+
+      This console owns the whole configuration, so the generated file carries only the console
+      coordinates and no secret of yours. Put it on the server and run:
+
+      ```
+      docker compose up -d
+      ```
+
+      The connector registers on start and picks its configuration up from here. Every change made
+      in this console afterwards is applied without touching the server.

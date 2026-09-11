@@ -4,11 +4,22 @@
 
 ### Added
 
+* New connector type `defender` (Microsoft Defender for Endpoint): `DefenderConfig`, its
+  deployment assets and its docker compose template
 * HostConnector config : if size at or below `extract_min_size` (default to 8KB) file is directly send to analyse without extraction 
 
 ### Changed
 
 * /metrics now return new quota
+
+### Fixed
+
+* An insecure console no longer disables certificate verification process-wide. `InsecureSkipVerify`
+  was set on `http.DefaultTransport` itself, which every other client of the connector shares, so
+  the connector also stopped verifying the certificates of the APIs it monitors
+* `MetricsCollector.SetDetectClient` is safe to call while quotas are being collected. It wrote a
+  plain field that the task loop reads on every iteration, so a connector replacing its detect
+  client on a reconfiguration raced the collector
 
 ## [v0.8.3]
 
