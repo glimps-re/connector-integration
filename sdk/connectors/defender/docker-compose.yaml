@@ -1,0 +1,10 @@
+name: glimpsdefender
+
+services:
+  defender-connector:
+    image: glimpsre/defender-connector:v0.2.0
+    restart: unless-stopped
+    environment:
+      DEFENDER_CONSOLE_URL: "{{ .URL }}"
+      DEFENDER_CONSOLE_API_KEY: "{{ .APIKey }}"
+      DEFENDER_CONSOLE_INSECURE: "{{ .Insecure }}"

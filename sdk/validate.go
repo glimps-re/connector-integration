@@ -17,7 +17,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-var validConnectorTypes = []string{DummyKey, M365Key, ICAPKey, SharepointKey, HostKey}
+var validConnectorTypes = []string{DummyKey, M365Key, ICAPKey, SharepointKey, HostKey, DefenderKey}
 
 // ConnectorTypeTag is the validator tag validating a connector type.
 const ConnectorTypeTag = "connector_type"

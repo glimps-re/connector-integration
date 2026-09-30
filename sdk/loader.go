@@ -32,6 +32,7 @@ const (
 	ICAPKey       = "icap"
 	SharepointKey = "sharepoint"
 	HostKey       = "host"
+	DefenderKey   = "defender"
 
 	connectorsFolderName = "connectors"
 	helmFolderName       = "helm"
@@ -142,7 +143,7 @@ const (
 // These configs should contain directly a list of fields (no nested struct) whose name
 // are explicit enough (because their name are currently used as displayed name by the frontend).
 type ConnectorConfig interface {
-	DummyConfig | M365Config | ICAPConfig | SharepointConfig | HostConfig
+	DummyConfig | M365Config | ICAPConfig | SharepointConfig | HostConfig | DefenderConfig
 }
 
 // Connector *Config must satisfy this interface if it needs to lint some secrets
@@ -662,6 +663,15 @@ func InitDefault(connectorType string) (config any, err error) {
 			RecursiveExtractMaxFiles: 10000,
 			Paths:                    []string{},
 		}
+	case DefenderKey:
+		config = &DefenderConfig{
+			CommonConnectorConfig:   defaultCommonConfig,
+			HTTPTimeout:             Duration(30 * time.Second),
+			PollInterval:            Duration(time.Minute),
+			WorkerNb:                20,
+			DownloadTimeout:         Duration(2*time.Hour + 30*time.Minute),
+			IndicatorResponseAction: "Alert",
+		}
 	default:
 		err = ErrInvalidConnectorType
 		return
@@ -731,6 +741,17 @@ func PatchConfig(connectorType string, rawActualConfig any, rawConfig json.RawMe
 		config = actualConfig
 	case HostKey:
 		actualConfig, ok := rawActualConfig.(*HostConfig)
+		if !ok {
+			err = errors.New("invalid config")
+			return
+		}
+		err = BindAndValidateRaw(actualConfig, rawConfig)
+		if err != nil {
+			return
+		}
+		config = actualConfig
+	case DefenderKey:
+		actualConfig, ok := rawActualConfig.(*DefenderConfig)
 		if !ok {
 			err = errors.New("invalid config")
 			return

@@ -101,8 +101,10 @@ type registerRequest struct {
 func NewConnectorManagerClient(ctx context.Context, config ConnectorManagerClientConfig) (c ConnectorManagerClient) {
 	c.httpClient = http.DefaultClient
 	if config.Insecure {
-		transport := http.DefaultTransport
-		transport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec // optional insecure
+		// Cloned: mutating http.DefaultTransport would disable verification for every other
+		// client in the process.
+		transport := http.DefaultTransport.(*http.Transport).Clone()
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec // optional insecure
 		c.httpClient = &http.Client{Transport: transport}
 	}
 	c.url = config.URL

@@ -21,6 +21,7 @@ func TestNewConnectorsTypesLoader(t *testing.T) {
 				ICAPKey:       true,
 				SharepointKey: true,
 				HostKey:       true,
+				DefenderKey:   true,
 			},
 		},
 	}

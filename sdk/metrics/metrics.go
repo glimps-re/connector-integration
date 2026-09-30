@@ -37,7 +37,9 @@ type MetricsCollector struct {
 	availableParallel           atomic.Int64
 	lastStart                   atomic.Int64
 
-	detectClient gdetect.GDetectSubmitter
+	// Read by the connector manager client's polling goroutine and replaced by the connector
+	// whenever it rebuilds its detect client, so it cannot be a plain field.
+	detectClient atomic.Pointer[gdetect.GDetectSubmitter]
 }
 
 // ConnectorMetrics represents current state of connector metrics.
@@ -69,20 +71,22 @@ func (m *MetricsCollector) AddMitigatedItem() {
 	m.itemsMitigated.Add(1)
 }
 
-// SetDetectClient sets the gdetect client used to retrieve quotas.
+// SetDetectClient sets the gdetect client used to retrieve quotas. Safe to call while quotas are
+// being collected: a connector reconfiguring itself replaces its detect client.
 func (m *MetricsCollector) SetDetectClient(client gdetect.GDetectSubmitter) {
-	m.detectClient = client
+	m.detectClient.Store(&client)
 }
 
 // GetAndStoreQuotas retrieves quotas from gdetect API and stores them.
 func (m *MetricsCollector) GetAndStoreQuotas(ctx context.Context) (err error) {
-	if m.detectClient == nil {
+	client := m.detectClient.Load()
+	if client == nil || *client == nil {
 		err = errors.New("detect client is nil")
 		return
 	}
 	getStatusCtx, getStatusCancel := context.WithTimeout(ctx, 15*time.Second) // on purpose large timeout
 	defer getStatusCancel()
-	status, err := m.detectClient.GetProfileStatus(getStatusCtx)
+	status, err := (*client).GetProfileStatus(getStatusCtx)
 	if err != nil {
 		err = fmt.Errorf("could not get status to retrieve quotas, %w", err)
 		return

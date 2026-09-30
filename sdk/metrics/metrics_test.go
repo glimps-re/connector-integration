@@ -104,12 +104,9 @@ func Test_MetricsCollector_GetAndStoreQuotas(t *testing.T) {
 				},
 			}
 
-			m := &MetricsCollector{
-				detectClient: mock,
-			}
-
-			if tt.fields.nilDetectClient {
-				m.detectClient = nil
+			m := new(MetricsCollector)
+			if !tt.fields.nilDetectClient {
+				m.SetDetectClient(mock)
 			}
 
 			err := m.GetAndStoreQuotas(t.Context())
