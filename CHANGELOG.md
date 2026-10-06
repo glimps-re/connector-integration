@@ -1,5 +1,21 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+* `sdk.M365Auth`, embedded in `SharepointConfig`: authentication mode `m365_auth_mode` (`secret`, `certificate`, `federated`), `m365_cert_thumbprint`, `m365_app_object_id`, `EffectiveMode()`. Existing records (no mode) keep working as `secret`.
+* `ConfigField.RequiredIf`: exposes `required_if` validation conditions to the frontend.
+
+### Changed
+
+* `SharepointConfig`: `m365_client_secret` is only required in mode `secret`; `mapstructure` tags use the json key names.
+
+### Removed
+
+* **Breaking**: embedded helm charts and everything serving them: `sdk/connectors/*/helm/`, `ConnectorType.Helm` / `HelmVersion`, `ConfigHelmer`, `GetTemplatedHelm`, `SharepointHelmConf`, `DummyHelmConf`, `ErrNoHelmConfig`, `ErrNoHelmForConnector`. Kubernetes resources are rendered by the console operator.
+* SharePoint docker compose template (`sdk/connectors/sharepoint/docker-compose.yaml`, `files/sharepoint-0.1.0.tgz`); the standalone deployment lives in the connector repository.
+
 ## [v0.9.0]
 
 ### Added

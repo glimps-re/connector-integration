@@ -1,10 +1,5 @@
 package sdk
 
-import (
-	"fmt"
-	"net/url"
-)
-
 type SharepointConfig struct {
 	ReconfigurableSharepointConfig
 
@@ -17,10 +12,10 @@ type SharepointConfig struct {
 type ReconfigurableSharepointConfig struct {
 	CommonConnectorConfig
 
-	ClientName       string `json:"client_name" mapstructure:"client_name" validate:"required"`
-	M365TenantID     string `json:"m365_tenant_id" mapstructure:"m365_tenant_id" validate:"required" desc:"Tenant ID"`
-	M365ClientID     string `json:"m365_client_id" mapstructure:"m365_client_id" validate:"required" desc:"M365 app registration client ID"`
-	M365ClientSecret string `json:"m365_client_secret,omitempty" mapstructure:"m365_client_secret" password:"true" validate:"required" desc:"M365 app registration client secret"`
+	ClientName string `json:"client_name" mapstructure:"client_name" validate:"required"`
+
+	// Microsoft Entra authentication (fields are promoted: M365TenantID, M365ClientID, M365ClientSecret, ...)
+	M365Auth `mapstructure:",squash"`
 
 	RealTimeMonitoring bool   `json:"real_time_monitoring" mapstructure:"real_time_monitoring" desc:"Use real-time monitoring. Requires 'WebhookURL' to be provided"`
 	WebhookURL         string `json:"webhook_url" mapstructure:"webhook_url" validate:"required_if=RealTimeMonitoring true,omitempty,url,startswith=https" desc:"URL where microsoft will send webhook notifications (technically to webhook-url/api/v1). Must starts by https"`
@@ -74,32 +69,8 @@ type DirectoryToExclude struct {
 	Extensions []string `json:"extensions" mapstructure:"extensions" desc:"List of extensions (e.g. .exe) to exclude in that directory. Leave empty to exclude all files, no matter the extension"`
 }
 
-type SharepointHelmConf struct {
-	ConsoleConfig
-	SharepointWebhookHost string `desc:"domain name where microsoft will send webhook notifications (e.g. client1.sharepoint.myserver.glimps.lan)"`
-}
-
 func (c *SharepointConfig) Strip() any {
 	cc := *c
 	cc.M365ClientSecret = ""
 	return cc
-}
-
-func (c *SharepointConfig) GetHelmConfig(consoleConfig ConsoleConfig) (helmConfig any, err error) {
-	var spWebhookHost string
-	if c.WebhookURL != "" {
-		var webhookURL *url.URL
-		webhookURL, err = url.Parse(c.WebhookURL)
-		if err != nil {
-			err = fmt.Errorf("error parsing current conf webhookURL, %w", err)
-			return
-		}
-		spWebhookHost = webhookURL.Hostname()
-	}
-
-	helmConfig = SharepointHelmConf{
-		ConsoleConfig:         consoleConfig,
-		SharepointWebhookHost: spWebhookHost,
-	}
-	return
 }

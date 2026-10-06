@@ -25,21 +25,8 @@ type DummyNestedObject struct {
 	NestedField2 string `json:"nested_field_2" desc:"Nested field 2"`
 }
 
-type DummyHelmConf struct {
-	ConsoleConfig
-	DummyField1 string
-}
-
 func (c *DummyConfig) Strip() any {
 	cc := *c
 	cc.Password = ""
 	return cc
-}
-
-func (c *DummyConfig) GetHelmConfig(consoleConfig ConsoleConfig) (helmConfig any, err error) {
-	helmConfig = DummyHelmConf{
-		ConsoleConfig: consoleConfig,
-		DummyField1:   c.DummyString,
-	}
-	return
 }

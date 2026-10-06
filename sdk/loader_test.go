@@ -326,65 +326,6 @@ func TestConnectorTypeLoader_GetTemplatedDockerCompose(t *testing.T) {
 	}
 }
 
-func TestConnectorTypeLoader_GetTemplatedHelm(t *testing.T) {
-	type args struct {
-		connectorType string
-		config        any
-	}
-	tests := []struct {
-		name              string
-		args              args
-		wantDockerCompose string
-		wantErr           bool
-	}{
-		{
-			name: "error unknown connector type",
-			args: args{
-				connectorType: "toto",
-				config:        ConsoleConfig{},
-			},
-			wantErr: true,
-		},
-		{
-			name: "ok sharepoint",
-			args: args{
-				connectorType: SharepointKey,
-				config: SharepointHelmConf{
-					ConsoleConfig: ConsoleConfig{
-						APIKey: "api-key",
-					},
-					SharepointWebhookHost: "client1.sharepoint.monserveur.glimps.lan",
-				},
-			},
-		},
-		{
-			name: "ok dummy",
-			args: args{
-				connectorType: DummyKey,
-				config: DummyHelmConf{
-					ConsoleConfig: ConsoleConfig{
-						APIKey: "api-key",
-					},
-					DummyField1: "custom",
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c, err := NewConnectorsTypesLoader(true)
-			if err != nil {
-				t.Fatalf("could not init connector types loader, err: %v", err)
-			}
-			_, err = c.GetTemplatedHelm(tt.args.connectorType, tt.args.config)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ConnectorTypeLoader.GetTemplatedHelm() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-		})
-	}
-}
-
 func Test_getConfigFields(t *testing.T) {
 	type TestCommonConnectorConfig struct {
 		ClientName          string   `json:"client_name" validate:"required" desc:"Name of the client"`

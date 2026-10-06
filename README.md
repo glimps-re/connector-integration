@@ -63,7 +63,23 @@ Metrics are always sent, even if nothing changed since last push.
     - `connector.yaml`: describe the connector (name, description, mitigation_info_type, setup_steps,launch_steps) ;
     - `logo.png`: your connector's logo ;
     - `docker-compose.yaml`: optional, your connector docker compose file, templated with console info (url, apikey) ;
-    - `helm/`: optional, folder containing your connector helm chart and values, templated with console info (url, apikey) ;
+    - `files/`: optional, static files referenced by the steps (guides, sample configuration).
+- Kubernetes deployment is not described in the SDK: the console operator renders the connector's resources itself (one renderer per connector type).
+
+## Microsoft 365 authentication
+
+Connectors talking to Microsoft Graph embed `sdk.M365Auth` in their configuration. It carries the
+tenant ID, the client ID and the authentication mode (`m365_auth_mode`):
+
+| Mode | Configuration fields | Secret material |
+|---|---|---|
+| `secret` (default when the mode is empty) | `m365_client_secret` | the client secret, stored encrypted by the manager |
+| `certificate` | `m365_cert_thumbprint`, optional `m365_app_object_id` (automatic rotation) | private key mounted into the connector by its deployment, never in the configuration |
+| `federated` | none | service account token mounted by the deployment |
+
+Use `EffectiveMode()` rather than reading `M365AuthMode` directly: records created before the mode
+existed have an empty mode and must be treated as `secret`. Validation is conditional
+(`required_if`), and the condition is exposed to the frontend through `ConfigField.RequiredIf`.
 
 ## Usage
 

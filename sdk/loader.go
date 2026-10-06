@@ -1,7 +1,6 @@
 package sdk
 
 import (
-	"archive/zip"
 	"bytes"
 	"embed"
 	"encoding/base64"
@@ -13,7 +12,6 @@ import (
 	"log/slog"
 	"path/filepath"
 	"reflect"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -34,8 +32,6 @@ const (
 	HostKey       = "host"
 
 	connectorsFolderName = "connectors"
-	helmFolderName       = "helm"
-	helmValuesFileName   = "values.yaml"
 
 	dockerComposeFileName = "docker-compose.yaml"
 	connectorFileName     = "connector.yaml"
@@ -82,9 +78,7 @@ type ConnectorType struct {
 	LaunchSteps        []Step        `yaml:"launch_steps" json:"-" desc:"steps to deploy connector"`
 	MitigationInfoType string        `yaml:"mitigation_info_type" json:"mitigation_info_type" desc:"what's connector treat : file, email, url"`
 	Logo               string        `yaml:"-" json:"logo"`
-	Helm               bool          `yaml:"-" json:"helm" desc:"whether helm chart is available for this connector type"`
 	DockerCompose      bool          `yaml:"-" json:"docker_compose" desc:"whether docker compose is available for this connector type"`
-	HelmVersion        string        `yaml:"-" json:"helm_version" desc:"helm chart version"`
 }
 
 type ConnectorFile struct {
@@ -126,6 +120,13 @@ type ConfigField struct {
 	DefaultValue   any               `json:"default_value"`
 	Password       bool              `json:"password"`
 	Enum           []string          `json:"enum,omitempty" desc:"enumeration possible values."`
+	RequiredIf     *ConfigFieldCond  `json:"required_if,omitempty" desc:"field is required when the sibling field 'key' has value 'value' (validator tag required_if)"`
+}
+
+// ConfigFieldCond is a condition on a sibling field, identified by its json key.
+type ConfigFieldCond struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 type ConfigFieldType string
@@ -148,11 +149,6 @@ type ConnectorConfig interface {
 // Connector *Config must satisfy this interface if it needs to lint some secrets
 type ConfigStripper interface {
 	Strip() any
-}
-
-// Connector *Config must satisfy this interface if it provide a helm deployment
-type ConfigHelmer interface {
-	GetHelmConfig(consoleConfig ConsoleConfig) (helmConfig any, err error)
 }
 
 type CommonConnectorConfig struct {
@@ -263,66 +259,6 @@ func (c ConnectorTypeLoader) GetTemplatedDockerCompose(connectorTypeID string, c
 	return
 }
 
-func (c ConnectorTypeLoader) GetTemplatedHelm(connectorTypeID string, config any) (r io.Reader, err error) {
-	connectorType, ok := c.connectorsTypes[connectorTypeID]
-	if !ok {
-		err = ErrConnectorTypeNotFound
-		return
-	}
-
-	if !connectorType.Helm {
-		err = ErrNoHelmForConnector
-		return
-	}
-
-	// get helm values templated
-	rawValues, err := configFS.ReadFile(filepath.Join(connectorsFolderName, connectorTypeID, helmFolderName, helmValuesFileName))
-	if err != nil {
-		return
-	}
-	tmpl, err := template.New("helmValues").Parse(string(rawValues))
-	if err != nil {
-		return
-	}
-	// add files to archive
-	buffer := bytes.NewBuffer(nil)
-	archive := zip.NewWriter(buffer)
-	defer func() {
-		if closeErr := archive.Close(); closeErr != nil {
-			logger.Warn("error closing zip", slog.String("error", closeErr.Error()))
-		}
-	}()
-	w, err := archive.Create(helmValuesFileName)
-	if err != nil {
-		return
-	}
-
-	if err = tmpl.Execute(w, config); err != nil {
-		return
-	}
-
-	helmFileName := fmt.Sprintf("%v-%v.tgz", connectorTypeID, connectorType.HelmVersion)
-	w, err = archive.Create(helmFileName)
-	if err != nil {
-		return
-	}
-	helmFile, err := configFS.Open(filepath.Join(connectorsFolderName, connectorTypeID, helmFolderName, helmFileName))
-	if err != nil {
-		return
-	}
-	defer func() {
-		if e := helmFile.Close(); e != nil {
-			logger.Warn("error closing file", slog.String("error", e.Error()))
-		}
-	}()
-	_, err = io.Copy(w, helmFile)
-	if err != nil {
-		return
-	}
-	r = buffer
-	return
-}
-
 func (c ConnectorTypeLoader) GetConnectorFile(connectorType string, fileID string) (file io.ReadCloser, err error) {
 	if _, ok := c.connectorsTypes[connectorType]; !ok {
 		err = ErrConnectorTypeNotFound
@@ -340,33 +276,6 @@ func (c ConnectorTypeLoader) GetConnectorFile(connectorType string, fileID strin
 	}
 }
 
-func checkHelmFolder(connectorFolder string) (helmVersion string, err error) {
-	entries, err := configFS.ReadDir(filepath.Join(connectorFolder, helmFolderName))
-	if err != nil {
-		return
-	}
-	valuesOK := false
-	chartOK := false
-	for _, entry := range entries {
-		if entry.Name() == helmValuesFileName {
-			valuesOK = true
-			continue
-		}
-		r := regexp.MustCompile(`.*-(\d\.\d\.\d)\.tgz`)
-		version := r.FindStringSubmatch(entry.Name())
-		if len(version) > 1 {
-			helmVersion = version[1]
-			chartOK = true
-			continue
-		}
-	}
-	if !valuesOK || !chartOK {
-		err = errors.New("invalid helm folder")
-		return
-	}
-	return
-}
-
 func getConnectorDesc(id string, connectorFolder string, devMode bool) (connectorType ConnectorType, err error) {
 	connectorType = ConnectorType{
 		SetupSteps:  []Step{},
@@ -382,14 +291,6 @@ func getConnectorDesc(id string, connectorFolder string, devMode bool) (connecto
 		switch filename {
 		case dockerComposeFileName:
 			connectorType.DockerCompose = true
-			continue
-		case helmFolderName:
-			helmVersion, helmErr := checkHelmFolder(connectorFolder)
-			if helmErr != nil {
-				continue
-			}
-			connectorType.HelmVersion = helmVersion
-			connectorType.Helm = true
 			continue
 		case logoFileName:
 		case connectorFileName:
@@ -550,12 +451,22 @@ func getConfigFields(config any) (configFields []ConfigField, err error) {
 		required := false
 		validation := []FrontValidation{}
 		var enumValues []string
+		var requiredIf *ConfigFieldCond
 		if validate, ok := field.Tag.Lookup("validate"); ok {
 			rules := strings.SplitSeq(validate, ",")
 			for rule := range rules {
 				switch {
 				case rule == "required":
 					required = true
+				case strings.HasPrefix(rule, "required_if="):
+					// required_if=<sibling field name> <value>: expose it with the sibling's json key
+					cond := strings.Fields(strings.TrimPrefix(rule, "required_if="))
+					if len(cond) == 2 {
+						if sibling, found := configType.FieldByName(cond[0]); found {
+							key, _, _ := strings.Cut(sibling.Tag.Get("json"), ",")
+							requiredIf = &ConfigFieldCond{Key: key, Value: cond[1]}
+						}
+					}
 				case rule == "url":
 					validation = append(validation, FrontValidURL)
 				case rule == "email":
@@ -593,6 +504,7 @@ func getConfigFields(config any) (configFields []ConfigField, err error) {
 			DefaultValue:   defaultValue,
 			Password:       password,
 			Enum:           enumValues,
+			RequiredIf:     requiredIf,
 		})
 	}
 	return

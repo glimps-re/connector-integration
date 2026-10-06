@@ -40,9 +40,7 @@ type APIErrorResponse struct {
 
 var (
 	ErrUnauthorizedConnector = errors.New("connector's api key is either revoked or invalid")
-	ErrNoHelmConfig          = errors.New("no specific helm config for this connector type")
 	ErrInvalidConnectorType  = errors.New("invalid connector type")
-	ErrNoHelmForConnector    = errors.New("no helm chart available for this connector")
 	ErrNoComposeForConnector = errors.New("no docker compose available for this connector")
 )
 
