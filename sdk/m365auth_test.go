@@ -72,6 +72,8 @@ func TestSharepointConfig_AuthValidation(t *testing.T) {
 		{"certificate: with object id", `"m365_auth_mode":"certificate","m365_tenant_id":"t","m365_client_id":"c","m365_cert_thumbprint":"` + testThumbprint + `","m365_app_object_id":"0b2b3b4b-1111-2222-3333-444455556666"`, ""},
 		{"certificate: thumbprint missing", `"m365_auth_mode":"certificate","m365_tenant_id":"t","m365_client_id":"c"`, "m365_cert_thumbprint"},
 		{"certificate: thumbprint malformed", `"m365_auth_mode":"certificate","m365_tenant_id":"t","m365_client_id":"c","m365_cert_thumbprint":"not-hex"`, "m365_cert_thumbprint"},
+		{"certificate: with key id", `"m365_auth_mode":"certificate","m365_tenant_id":"t","m365_client_id":"c","m365_cert_thumbprint":"` + testThumbprint + `","m365_cert_key_id":"0b2b3b4b-1111-2222-3333-444455556666"`, ""},
+		{"certificate: bad key id", `"m365_auth_mode":"certificate","m365_tenant_id":"t","m365_client_id":"c","m365_cert_thumbprint":"` + testThumbprint + `","m365_cert_key_id":"nope"`, "m365_cert_key_id"},
 		{"certificate: bad object id", `"m365_auth_mode":"certificate","m365_tenant_id":"t","m365_client_id":"c","m365_cert_thumbprint":"` + testThumbprint + `","m365_app_object_id":"nope"`, "m365_app_object_id"},
 		{"federated: nothing else", `"m365_auth_mode":"federated","m365_tenant_id":"t","m365_client_id":"c"`, ""},
 		{"unknown mode", `"m365_auth_mode":"delegated","m365_tenant_id":"t","m365_client_id":"c"`, "m365_auth_mode"},

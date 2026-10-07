@@ -33,6 +33,7 @@ type M365Auth struct {
 	// Mode certificate
 	M365CertThumbprint string `json:"m365_cert_thumbprint,omitempty" mapstructure:"m365_cert_thumbprint" validate:"required_if=M365AuthMode certificate,omitempty,hexadecimal,len=40" desc:"SHA-1 thumbprint (40 hexadecimal characters) of the certificate registered on the app registration (required in mode certificate)"`
 	M365AppObjectID    string `json:"m365_app_object_id,omitempty" mapstructure:"m365_app_object_id" validate:"omitempty,uuid" desc:"Object ID of the app registration (not the client ID). Optional, enables automatic certificate rotation in mode certificate"`
+	M365CertKeyID      string `json:"m365_cert_key_id,omitempty" mapstructure:"m365_cert_key_id" validate:"omitempty,uuid" desc:"keyId of the certificate on the app registration (keyCredentials). Optional, written by the enrolment and by the rotation so the previous certificate can be removed automatically"`
 }
 
 // Enrolled reports whether the Microsoft 365 application is known, i.e. whether the connector can
