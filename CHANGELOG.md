@@ -6,6 +6,7 @@
 
 * `sdk.M365Auth`, embedded in `SharepointConfig`: authentication mode `m365_auth_mode` (`secret`, `certificate`, `federated`), `m365_cert_thumbprint`, `m365_app_object_id`, `EffectiveMode()`. Existing records (no mode) keep working as `secret`.
 * `ConfigField.RequiredIf`: exposes `required_if` validation conditions to the frontend.
+* `M365Auth.Enrolled()`: `m365_client_id` is no longer required at creation, so the console operator can create a connector instance before the Microsoft 365 enrolment; connectors wait for the client ID before starting.
 
 ### Changed
 

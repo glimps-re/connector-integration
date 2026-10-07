@@ -76,6 +76,8 @@ func TestSharepointConfig_AuthValidation(t *testing.T) {
 		{"federated: nothing else", `"m365_auth_mode":"federated","m365_tenant_id":"t","m365_client_id":"c"`, ""},
 		{"unknown mode", `"m365_auth_mode":"delegated","m365_tenant_id":"t","m365_client_id":"c"`, "m365_auth_mode"},
 		{"tenant always required", `"m365_auth_mode":"federated","m365_client_id":"c"`, "m365_tenant_id"},
+		{"client id optional before enrolment (certificate)", `"m365_auth_mode":"certificate","m365_tenant_id":"t","m365_cert_thumbprint":"` + testThumbprint + `"`, ""},
+		{"client id optional before enrolment (federated)", `"m365_auth_mode":"federated","m365_tenant_id":"t"`, ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -128,6 +130,15 @@ func TestPatchConfig_SwitchLegacyRecordToCertificate(t *testing.T) {
 	}
 }
 
+func TestM365Auth_Enrolled(t *testing.T) {
+	if (M365Auth{M365TenantID: "t"}).Enrolled() {
+		t.Fatal("no client ID means not enrolled")
+	}
+	if !(M365Auth{M365TenantID: "t", M365ClientID: "c"}).Enrolled() {
+		t.Fatal("client ID set means enrolled")
+	}
+}
+
 func TestSharepointConfig_StripMasksSecretOnly(t *testing.T) {
 	sp := &SharepointConfig{ReconfigurableSharepointConfig: ReconfigurableSharepointConfig{
 		M365Auth: M365Auth{M365AuthMode: M365AuthCertificate, M365ClientSecret: "s", M365CertThumbprint: testThumbprint},
@@ -161,5 +172,8 @@ func TestGetConfigFields_M365Auth(t *testing.T) {
 	}
 	if _, ok := byKey["m365_tenant_id"]; !ok || !byKey["m365_tenant_id"].Required {
 		t.Fatal("m365_tenant_id must stay a required top-level field")
+	}
+	if byKey["m365_client_id"].Required {
+		t.Fatal("m365_client_id must be optional at creation (filled by the enrolment)")
 	}
 }

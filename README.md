@@ -77,7 +77,8 @@ tenant ID, the client ID and the authentication mode (`m365_auth_mode`):
 | `certificate` | `m365_cert_thumbprint`, optional `m365_app_object_id` (automatic rotation) | private key mounted into the connector by its deployment, never in the configuration |
 | `federated` | none | service account token mounted by the deployment |
 
-Use `EffectiveMode()` rather than reading `M365AuthMode` directly: records created before the mode
+`m365_client_id` is optional at creation (the enrolment assistant fills it in); a connector must
+check `Enrolled()` and wait before authenticating. Use `EffectiveMode()` rather than reading `M365AuthMode` directly: records created before the mode
 existed have an empty mode and must be treated as `secret`. Validation is conditional
 (`required_if`), and the condition is exposed to the frontend through `ConfigField.RequiredIf`.
 
