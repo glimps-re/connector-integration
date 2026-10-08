@@ -74,7 +74,7 @@ tenant ID, the client ID and the authentication mode (`m365_auth_mode`):
 | Mode | Configuration fields | Secret material |
 |---|---|---|
 | `secret` (default when the mode is empty) | `m365_client_secret` | the client secret, stored encrypted by the manager |
-| `certificate` | `m365_cert_thumbprint`, optional `m365_app_object_id` and `m365_cert_key_id` (automatic rotation) | private key mounted into the connector by its deployment, never in the configuration |
+| `certificate` | `m365_cert_thumbprint`, `m365_cert_public` (PEM, written by the deployment for the enrolment), optional `m365_app_object_id` and `m365_cert_key_id` (automatic rotation) | private key mounted into the connector by its deployment, never in the configuration |
 | `federated` | none | service account token mounted by the deployment |
 
 `m365_client_id` is optional at creation (the enrolment assistant fills it in); a connector must
