@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.9.1]
+
+### Changed
+
+* ODSP Configuration : make Timeouts configurable
+
 ## [v0.9.0]
 
 ### Added
