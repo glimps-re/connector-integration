@@ -3,7 +3,6 @@ package sdk
 import (
 	"fmt"
 	"net/url"
-	"time"
 )
 
 type SharepointConfig struct {
@@ -56,8 +55,10 @@ type ReconfigurableSharepointConfig struct {
 
 	TimeoutFactor int `json:"timeout_factor" mapstructure:"timeout-factor" validate:"min=1" desc:"Optional factor to increase timeouts (if set, must be an integer >= 1). 1 to use default timeouts values"`
 
-	DrivesSearchFrequency time.Duration `json:"drives_search_frequency" mapstructure:"drives-search-frequency" desc:"Sets the time between two full scan ticks"`
-	GraphClientTimeout    time.Duration `json:"graph_client_timeout" mapstructure:"graph-client-timeout" desc:"Time before a graph client call expiration"`
+	// DrivesSearchFrequency bounds: 1m (60000000000 ns) to 24h (86400000000000 ns); 0 = connector default (5m).
+	DrivesSearchFrequency Duration `json:"drives_search_frequency" mapstructure:"drives-search-frequency" validate:"omitempty,min=60000000000,max=86400000000000" desc:"Time between two searches for new, deleted or archived sites, groups and drives to monitor (not a scan of drive contents). Format: '5m', from 1m to 24h. 0s: 5m (default)"`
+	// GraphClientTimeout bounds: 60s (60000000000 ns) to 1h (3600000000000 ns); 0 = connector default (300s).
+	GraphClientTimeout Duration `json:"graph_client_timeout" mapstructure:"graph-client-timeout" validate:"omitempty,min=60000000000,max=3600000000000" desc:"Overall timeout of one Microsoft Graph call, throttling retries and redirects included. Format: '300s', from 60s to 1h. 0s: 300s (default)"`
 }
 
 type SPMitigationActions struct {
