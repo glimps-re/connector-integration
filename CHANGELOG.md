@@ -5,6 +5,7 @@
 ### Changed
 
 * ODSP Configuration : make Timeouts configurable
+* SharePoint: `drives_search_frequency` and `graph_client_timeout` are `Duration` strings (e.g. "5m") with bounds
 
 ## [v0.9.0]
 
