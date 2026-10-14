@@ -3,6 +3,7 @@ package sdk
 import (
 	"fmt"
 	"net/url"
+	"time"
 )
 
 type SharepointConfig struct {
@@ -54,6 +55,9 @@ type ReconfigurableSharepointConfig struct {
 	ExclusionRules []SPExclusionRule `json:"exclusion_rules" mapstructure:"exclusion-rules" desc:"Exclusion rules allow to exclude certain files or folders from analysis. It is particularly useful for files that are modified regularly, for which whitelisting by hash is not sufficient. Each rule is associated to a single drive (= a library in a site)"`
 
 	TimeoutFactor int `json:"timeout_factor" mapstructure:"timeout-factor" validate:"min=1" desc:"Optional factor to increase timeouts (if set, must be an integer >= 1). 1 to use default timeouts values"`
+
+	DrivesSearchFrequency time.Duration `json:"drives_search_frequency" mapstructure:"drives-search-frequency" desc:"Sets the time between two full scan ticks"`
+	GraphClientTimeout    time.Duration `json:"graph_client_timeout" mapstructure:"graph-client-timeout" desc:"Time before a graph client call expiration"`
 }
 
 type SPMitigationActions struct {
