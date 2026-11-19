@@ -1,5 +1,14 @@
 # Changelog
 
+## [v0.10.0]
+
+### Added
+
+* HostConnector config: `quarantine.format` (`tar` default, `zip`) selects the container format for newly quarantined files
+* HostConnector config: `monitoring.disable_fs_watcher`, `monitoring.max_tracked_memory`, `monitoring.max_tracked_dir_percent`
+* HostConnector config: `move.mode` (`copy`, `rename`), `move.min_throughput`
+* HostConnector config: `work_dir` and `unanalyzable_policy` (`too_big`, `empty`, `encrypted`, `extract_error`). For all new keys the zero value means the connector default. Default configuration sets `move.mode: rename`, `unanalyzable_policy.too_big: error` and `unanalyzable_policy.empty: skip`
+
 ## [v0.9.1]
 
 ### Changed
@@ -12,7 +21,6 @@
 ### Added
 
 * HostConnector config : if size at or below `extract_min_size` (default to 8KB) file is directly send to analyse without extraction 
-* HostConnector config: `quarantine.format` (`tar` default, `zip`) selects the container format for newly quarantined files
 
 ### Changed
 

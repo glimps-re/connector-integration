@@ -654,6 +654,11 @@ func InitDefault(connectorType string) (config any, err error) {
 			Monitoring: HostMonitoringConfig{
 				ModificationDelay: Duration(time.Second * 30),
 			},
+			Move: HostMoveConfig{Mode: "rename"},
+			UnanalyzablePolicy: HostUnanalyzablePolicy{
+				TooBig: "error",
+				Empty:  "skip",
+			},
 			Workers:                  4,
 			ExtractWorkers:           2,
 			MaxFileSize:              "100MiB",

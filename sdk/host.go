@@ -2,22 +2,33 @@ package sdk
 
 type HostConfig struct {
 	CommonConnectorConfig    `yaml:",inline" mapstructure:",squash"`
-	Workers                  int                  `json:"workers" mapstructure:"workers" yaml:"workers" validate:"min=1" desc:"Number of concurrent workers for file analysis (default: 4, affects CPU usage)"`
-	ExtractWorkers           int                  `json:"extract_workers" mapstructure:"extract_workers" yaml:"extract_workers" validate:"min=1" desc:"Number of input archives processed simultaneously. Setting it too high makes many archives compete for the same analysis pool, slowing the completion of each individual input. Ratio should be at least 1:10 compared to analysis workers (1:20 can be a good choice to speed up input process time). (default: 2, used when extract is enabled)"`
-	Extract                  bool                 `json:"extract" mapstructure:"extract" yaml:"extract" desc:"Enable archive extraction (archives are unpacked and contents scanned)"`
-	ExtractMinSize           string               `json:"extract_min_size" mapstructure:"extract_min_size" yaml:"extract_min_size" desc:"Minimum file size to attempt extraction (e.g., '8KB'). Files at or below this size are sent for analysis instead of being extracted (default: 8KB)"`
-	RecursiveExtractMaxDepth int                  `json:"recursive_extract_max_depth" mapstructure:"recursive_extract_max_depth" yaml:"recursive_extract_max_depth" desc:"Maximum nesting level for recursive extraction. Beyond this depth, nested archives are sent for analysis instead of being extracted"`
-	RecursiveExtractMaxSize  string               `json:"recursive_extract_max_size" mapstructure:"recursive_extract_max_size" yaml:"recursive_extract_max_size" desc:"Maximum total size of extracted content across all nesting levels (e.g., '5GB'). When reached, remaining archives are sent for analysis instead of being extracted. Note: may exceed by up to one archive's extracted content"`
-	RecursiveExtractMaxFiles int                  `json:"recursive_extract_max_files" mapstructure:"recursive_extract_max_files" yaml:"recursive_extract_max_files" desc:"Maximum number of files to extract recursively"`
-	MaxFileSize              string               `json:"max_file_size" mapstructure:"max_file_size" yaml:"max_file_size" desc:"Maximum file size to submit to GLIMPS Malware Detect (e.g., '100MB')"`
-	Paths                    []string             `json:"paths" yaml:"paths" validate:"required,min=1" desc:"List of directories or files to monitor and scan (can be absolute or relative paths)"`
-	FollowSymlinks           bool                 `json:"follow_symlinks" yaml:"follow_symlinks" desc:"Follow symbolic links when scanning directories (if disabled, symlinks are skipped)"`
-	Actions                  HostActionsConfig    `json:"actions" mapstructure:"actions" yaml:"actions" desc:"Actions to perform on scanned files (delete, quarantine, log, move, print)"`
-	Quarantine               HostQuarantineConfig `json:"quarantine" mapstructure:"quarantine" yaml:"quarantine" desc:"Configuration for encrypted quarantine storage of malware files"`
-	Monitoring               HostMonitoringConfig `json:"monitoring" mapstructure:"monitoring" yaml:"monitoring" desc:"Configuration for continuous directory monitoring and periodic re-scanning"`
-	Move                     HostMoveConfig       `json:"move" mapstructure:"move" yaml:"move" desc:"Configuration for moving clean files from source to destination after scanning"`
-	Print                    HostPrintConfig      `json:"print" mapstructure:"print" yaml:"print" desc:"Configuration for outputting scan reports to console or file"`
-	PluginsConfig            string               `json:"plugins_config" yaml:"plugins_config" mapstructure:"plugins_config" desc:"Path to plugins configuration file (required for host connector plugin functionality)"`
+	Workers                  int                    `json:"workers" mapstructure:"workers" yaml:"workers" validate:"min=1" desc:"Number of concurrent workers for file analysis (default: 4, affects CPU usage)"`
+	ExtractWorkers           int                    `json:"extract_workers" mapstructure:"extract_workers" yaml:"extract_workers" validate:"min=1" desc:"Number of input archives processed simultaneously. Setting it too high makes many archives compete for the same analysis pool, slowing the completion of each individual input. Ratio should be at least 1:10 compared to analysis workers (1:20 can be a good choice to speed up input process time). (default: 2, used when extract is enabled)"`
+	Extract                  bool                   `json:"extract" mapstructure:"extract" yaml:"extract" desc:"Enable archive extraction (archives are unpacked and contents scanned)"`
+	ExtractMinSize           string                 `json:"extract_min_size" mapstructure:"extract_min_size" yaml:"extract_min_size" desc:"Minimum file size to attempt extraction (e.g., '8KB'). Files at or below this size are sent for analysis instead of being extracted (default: 8KB)"`
+	RecursiveExtractMaxDepth int                    `json:"recursive_extract_max_depth" mapstructure:"recursive_extract_max_depth" yaml:"recursive_extract_max_depth" desc:"Maximum nesting level for recursive extraction. Beyond this depth, nested archives are sent for analysis instead of being extracted"`
+	RecursiveExtractMaxSize  string                 `json:"recursive_extract_max_size" mapstructure:"recursive_extract_max_size" yaml:"recursive_extract_max_size" desc:"Maximum total size of extracted content across all nesting levels (e.g., '5GB'). When reached, remaining archives are sent for analysis instead of being extracted. Note: may exceed by up to one archive's extracted content"`
+	RecursiveExtractMaxFiles int                    `json:"recursive_extract_max_files" mapstructure:"recursive_extract_max_files" yaml:"recursive_extract_max_files" desc:"Maximum number of files to extract recursively"`
+	MaxFileSize              string                 `json:"max_file_size" mapstructure:"max_file_size" yaml:"max_file_size" desc:"Maximum file size to submit to GLIMPS Malware Detect (e.g., '100MB')"`
+	Paths                    []string               `json:"paths" yaml:"paths" validate:"required,min=1" desc:"List of directories or files to monitor and scan (can be absolute or relative paths)"`
+	FollowSymlinks           bool                   `json:"follow_symlinks" yaml:"follow_symlinks" desc:"Follow symbolic links when scanning directories (if disabled, symlinks are skipped)"`
+	Actions                  HostActionsConfig      `json:"actions" mapstructure:"actions" yaml:"actions" desc:"Actions to perform on scanned files (delete, quarantine, log, move, print)"`
+	Quarantine               HostQuarantineConfig   `json:"quarantine" mapstructure:"quarantine" yaml:"quarantine" desc:"Configuration for encrypted quarantine storage of malware files"`
+	Monitoring               HostMonitoringConfig   `json:"monitoring" mapstructure:"monitoring" yaml:"monitoring" desc:"Configuration for continuous directory monitoring and periodic re-scanning"`
+	Move                     HostMoveConfig         `json:"move" mapstructure:"move" yaml:"move" desc:"Configuration for moving clean files from source to destination after scanning"`
+	Print                    HostPrintConfig        `json:"print" mapstructure:"print" yaml:"print" desc:"Configuration for outputting scan reports to console or file"`
+	WorkDir                  string                 `json:"work_dir" mapstructure:"work_dir" yaml:"work_dir" desc:"Private directory for temporary and working files (default: system temporary directory). Not yet supported by the host connector: any value other than the default is refused."`
+	UnanalyzablePolicy       HostUnanalyzablePolicy `json:"unanalyzable_policy" mapstructure:"unanalyzable_policy" yaml:"unanalyzable_policy" desc:"What to do with files that cannot be analyzed"`
+	PluginsConfig            string                 `json:"plugins_config" yaml:"plugins_config" mapstructure:"plugins_config" desc:"Path to plugins configuration file (required for host connector plugin functionality)"`
+}
+
+// HostUnanalyzablePolicy sets the handling of files that cannot be analyzed.
+// An empty value selects the connector default.
+type HostUnanalyzablePolicy struct {
+	TooBig       string `json:"too_big" mapstructure:"too_big" yaml:"too_big" validate:"omitempty,oneof=error pass mitigate" desc:"Files above the size limit: 'error' (left in place, default). 'pass' and 'mitigate' are not yet supported by the host connector and are refused."`
+	Empty        string `json:"empty" mapstructure:"empty" yaml:"empty" validate:"omitempty,oneof=skip pass mitigate" desc:"Empty files: 'skip' (ignored, default). 'pass' and 'mitigate' are not yet supported by the host connector and are refused."`
+	Encrypted    string `json:"encrypted" mapstructure:"encrypted" yaml:"encrypted" validate:"omitempty,oneof=error pass mitigate" desc:"Archives encrypted with an unknown password: 'error' (left in place, default). Not yet supported by the host connector: any other value is refused."`
+	ExtractError string `json:"extract_error" mapstructure:"extract_error" yaml:"extract_error" validate:"omitempty,oneof=error as_file" desc:"Archives that cannot be extracted cleanly: 'error' (left in place, default). Not yet supported by the host connector: 'as_file' is refused."`
 }
 
 type HostPrintConfig struct {
@@ -34,9 +45,12 @@ type HostActionsConfig struct {
 }
 
 type HostMonitoringConfig struct {
-	PreScan           bool     `json:"prescan" mapstructure:"prescan" yaml:"prescan" desc:"Immediately scan all existing files in monitored paths when monitoring starts"`
-	Period            Duration `json:"period" mapstructure:"period" yaml:"period" desc:"If set, enable periodic re-scan. Interval between periodic re-scans (e.g., '1h', '30m')"`
-	ModificationDelay Duration `json:"modification_delay" mapstructure:"modification_delay" yaml:"modification_delay" desc:"Wait time after file modification before scanning (e.g., '30s', prevents scanning incomplete writes)"`
+	PreScan              bool     `json:"prescan" mapstructure:"prescan" yaml:"prescan" desc:"Immediately scan all existing files in monitored paths when monitoring starts"`
+	Period               Duration `json:"period" mapstructure:"period" yaml:"period" desc:"If set, enable periodic re-scan. Interval between periodic re-scans (e.g., '1h', '30m')"`
+	ModificationDelay    Duration `json:"modification_delay" mapstructure:"modification_delay" yaml:"modification_delay" desc:"Wait time after file modification before scanning (e.g., '30s', prevents scanning incomplete writes)"`
+	DisableFSWatcher     bool     `json:"disable_fs_watcher" mapstructure:"disable_fs_watcher" yaml:"disable_fs_watcher" desc:"Disable filesystem event watching and rely on periodic scans only (default: false). Not yet supported by the host connector: 'true' is refused."`
+	MaxTrackedMemory     string   `json:"max_tracked_memory" mapstructure:"max_tracked_memory" yaml:"max_tracked_memory" desc:"Memory budget for the table of tracked files (e.g., '256MiB'). Not yet supported by the host connector: any value other than the default is refused."`
+	MaxTrackedDirPercent int      `json:"max_tracked_dir_percent" mapstructure:"max_tracked_dir_percent" yaml:"max_tracked_dir_percent" validate:"min=0,max=100" desc:"Share of the tracked table, in percent, above which a folder owner is evicted first when the table is full. Not yet supported by the host connector: any value other than the default is refused."`
 }
 
 type HostQuarantineConfig struct {
@@ -47,6 +61,8 @@ type HostQuarantineConfig struct {
 }
 
 type HostMoveConfig struct {
-	Destination string `json:"destination" mapstructure:"destination" yaml:"destination" desc:"Target directory for moving clean files (preserves subdirectory structure)"`
-	Source      string `json:"source" mapstructure:"source" yaml:"source" desc:"Source directory filter (only clean files within this path are moved to destination)"`
+	Destination   string `json:"destination" mapstructure:"destination" yaml:"destination" desc:"Target directory for moving clean files (preserves subdirectory structure)"`
+	Source        string `json:"source" mapstructure:"source" yaml:"source" desc:"Source directory filter (only clean files within this path are moved to destination)"`
+	Mode          string `json:"mode" mapstructure:"mode" yaml:"mode" validate:"omitempty,oneof=copy rename" desc:"How clean files are moved: 'rename' (default). 'copy' (verified copy then delete the source) is not yet supported by the host connector and is refused."`
+	MinThroughput string `json:"min_throughput" mapstructure:"min_throughput" yaml:"min_throughput" desc:"Minimum expected copy throughput per second (e.g., '10MiB'); slower copies are abandoned for that attempt. Not yet supported by the host connector: any value other than the default is refused."`
 }
