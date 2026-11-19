@@ -781,7 +781,7 @@ func Test_getConfigFields(t *testing.T) {
 					Name:           "Format",
 					Key:            "format",
 					Type:           "string",
-					Description:    "Container format for new quarantined files: 'tar' (encrypted tar, default) or 'zip' (password-protected ZIP openable with standard archive tools; existing files stay readable whatever the value)",
+					Description:    "Container format for new quarantined files: 'tar' (encrypted tar, default) or 'zip' (password-protected ZIP openable with standard archive tools; existing files stay readable whatever the value). With 'zip' the quarantine password must be considered public: do not reuse it elsewhere",
 					Validation:     []FrontValidation{},
 					Reconfigurable: true,
 					DefaultValue:   "",

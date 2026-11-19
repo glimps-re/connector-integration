@@ -57,7 +57,7 @@ type HostQuarantineConfig struct {
 	Location string `json:"location" mapstructure:"location" yaml:"location" desc:"Directory path where quarantined files are stored (files are encrypted with .lock extension)"`
 	Password string `json:"password" mapstructure:"password" yaml:"password" password:"true" desc:"Password for encrypting quarantined files (required to restore files later)"`
 	Registry string `json:"registry" mapstructure:"registry" yaml:"registry" desc:"Path to the database that store quarantined and restored file entry (leave empty for in-memory store, lost on restart)"`
-	Format   string `json:"format" mapstructure:"format" yaml:"format" validate:"omitempty,oneof=tar zip" desc:"Container format for new quarantined files: 'tar' (encrypted tar, default) or 'zip' (password-protected ZIP openable with standard archive tools; existing files stay readable whatever the value)"`
+	Format   string `json:"format" mapstructure:"format" yaml:"format" validate:"omitempty,oneof=tar zip" desc:"Container format for new quarantined files: 'tar' (encrypted tar, default) or 'zip' (password-protected ZIP openable with standard archive tools; existing files stay readable whatever the value). With 'zip' the quarantine password must be considered public: do not reuse it elsewhere"`
 }
 
 type HostMoveConfig struct {
