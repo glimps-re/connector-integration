@@ -17,7 +17,7 @@ type HostConfig struct {
 	Monitoring               HostMonitoringConfig   `json:"monitoring" mapstructure:"monitoring" yaml:"monitoring" desc:"Configuration for continuous directory monitoring and periodic re-scanning"`
 	Move                     HostMoveConfig         `json:"move" mapstructure:"move" yaml:"move" desc:"Configuration for moving clean files from source to destination after scanning"`
 	Print                    HostPrintConfig        `json:"print" mapstructure:"print" yaml:"print" desc:"Configuration for outputting scan reports to console or file"`
-	WorkDir                  string                 `json:"work_dir" mapstructure:"work_dir" yaml:"work_dir" desc:"Private directory for temporary and working files (default: system temporary directory). Not yet supported by the host connector: any value other than the default is refused."`
+	WorkDir                  string                 `json:"work_dir" mapstructure:"work_dir" yaml:"work_dir" desc:"Base directory of the connector private working directory: a gmhost-* sub-directory is created there for archive extractions and plugin files, and removed at stop (default: the system temporary directory, TMPDIR honored). It must not be a monitored path. Use a local disk: a memory filesystem (tmpfs) uses RAM, a network filesystem is slow and its locks unreliable."`
 	UnanalyzablePolicy       HostUnanalyzablePolicy `json:"unanalyzable_policy" mapstructure:"unanalyzable_policy" yaml:"unanalyzable_policy" desc:"What to do with files that cannot be analyzed"`
 	PluginsConfig            string                 `json:"plugins_config" yaml:"plugins_config" mapstructure:"plugins_config" desc:"Path to plugins configuration file (required for host connector plugin functionality)"`
 }
