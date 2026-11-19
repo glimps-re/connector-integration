@@ -9,6 +9,10 @@
 * HostConnector config: `move.mode` (`copy`, `rename`), `move.min_throughput`
 * HostConnector config: `work_dir` and `unanalyzable_policy` (`too_big`, `empty`, `encrypted`, `extract_error`). For all new keys the zero value means the connector default. Default configuration sets `move.mode: rename`, `unanalyzable_policy.too_big: error` and `unanalyzable_policy.empty: skip`
 
+### Security
+
+* Dependency updates: echo 4.16.1, golang.org/x/crypto 0.59.0, x/net 0.62.0, x/text 0.44.0, x/sys 0.50.0. GO-2026-6875 and GO-2026-6872 (echo proxy and rate limiter middlewares) have no upstream fix and are not reachable: the SDK uses neither middleware
+
 ## [v0.9.1]
 
 ### Changed
