@@ -78,6 +78,9 @@ func DefaultValidator() (v *defaultValidator, err error) {
 	if err != nil {
 		return
 	}
+	if err = registerHostConfigValidation(validate, trans); err != nil {
+		return
+	}
 	err = en_translations.RegisterDefaultTranslations(validate, trans)
 	if err != nil {
 		return

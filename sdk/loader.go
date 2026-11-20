@@ -659,7 +659,7 @@ func InitDefault(connectorType string) (config any, err error) {
 			Move: HostMoveConfig{Mode: "copy", MinThroughput: "10MiB"},
 			UnanalyzablePolicy: HostUnanalyzablePolicy{
 				TooBig: "error",
-				Empty:  "skip",
+				Empty:  "pass",
 			},
 			Workers:                  4,
 			ExtractWorkers:           2,

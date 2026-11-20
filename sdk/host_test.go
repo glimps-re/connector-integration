@@ -101,7 +101,7 @@ func TestInitDefault_HostNewKeys(t *testing.T) {
 	if !ok {
 		t.Fatalf("InitDefault returned %T", config)
 	}
-	want := HostUnanalyzablePolicy{TooBig: "error", Empty: "skip"}
+	want := HostUnanalyzablePolicy{TooBig: "error", Empty: "pass"}
 	if c.UnanalyzablePolicy != want || c.Move.Mode != "copy" {
 		t.Errorf("defaults = %+v, move.mode %q; want %+v, copy", c.UnanalyzablePolicy, c.Move.Mode, want)
 	}
@@ -164,5 +164,57 @@ func TestHostConfig_DescMentionsDefault(t *testing.T) {
 		if d := byKey[key].Description; !strings.Contains(d, want) || !strings.Contains(d, "default") {
 			t.Errorf("%s description %q does not state default %s", key, d, want)
 		}
+	}
+}
+
+// empty: pass needs the move by copy: it is refused with the move action on in
+// rename mode, and only then.
+func TestHostConfig_emptyPassWithRename(t *testing.T) {
+	tests := []struct {
+		name    string
+		empty   string
+		move    bool
+		mode    string
+		wantErr bool
+	}{
+		{"pass, move on, rename", "pass", true, "rename", true},
+		{"pass, move on, copy", "pass", true, "copy", false},
+		{"pass, move on, no mode", "pass", true, "", false},
+		{"pass, move off, rename", "pass", false, "rename", false},
+		{"absent, move on, rename", "", true, "rename", false},
+		{"skip, move on, rename", "skip", true, "rename", false},
+		{"mitigate, move on, rename", "mitigate", true, "rename", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v, err := DefaultValidator()
+			if err != nil {
+				t.Fatal(err)
+			}
+			base, err := InitDefault(HostKey)
+			if err != nil {
+				t.Fatal(err)
+			}
+			c, ok := base.(*HostConfig)
+			if !ok {
+				t.Fatalf("InitDefault returned %T", base)
+			}
+			c.GMalwareAPIURL, c.GMalwareAPIToken, c.Paths = "https://gmalware.example", "00000000-00000000-00000000-00000000-00000000", []string{"/in"}
+			c.UnanalyzablePolicy.Empty, c.Actions.Move, c.Move.Mode = tt.empty, tt.move, tt.mode
+			err = v.Validate(c)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if err == nil {
+				return
+			}
+			var verrs validator.ValidationErrors
+			if !errors.As(err, &verrs) || len(verrs) != 1 {
+				t.Fatalf("error = %v, want one validation error", err)
+			}
+			if got := verrs[0].Translate(v.Trans); got != HostEmptyPassWithRenameMessage {
+				t.Errorf("message = %q, want the connector's wording", got)
+			}
+		})
 	}
 }

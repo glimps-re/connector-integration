@@ -25,9 +25,9 @@ type HostConfig struct {
 // HostUnanalyzablePolicy sets the handling of files that cannot be analyzed.
 // An empty value selects the connector default.
 type HostUnanalyzablePolicy struct {
-	TooBig       string `json:"too_big" mapstructure:"too_big" yaml:"too_big" validate:"omitempty,oneof=error pass mitigate" desc:"Files above the size limit: 'error' (left in place, default). 'pass' and 'mitigate' are not yet supported by the host connector and are refused."`
-	Empty        string `json:"empty" mapstructure:"empty" yaml:"empty" validate:"omitempty,oneof=skip pass mitigate" desc:"Empty files: 'skip' (ignored, default). 'pass' and 'mitigate' are not yet supported by the host connector and are refused."`
-	Encrypted    string `json:"encrypted" mapstructure:"encrypted" yaml:"encrypted" validate:"omitempty,oneof=error pass mitigate" desc:"Archives encrypted with an unknown password: 'error' (left in place, default). Not yet supported by the host connector: any other value is refused."`
+	TooBig       string `json:"too_big" mapstructure:"too_big" yaml:"too_big" validate:"omitempty,oneof=error pass mitigate" desc:"Files above the size limit that are not extracted (and members of an archive over it, or left out by the extraction limits): 'error' (left in place, default), 'pass' (delivered, marked not analyzed) or 'mitigate' (treated as malware)."`
+	Empty        string `json:"empty" mapstructure:"empty" yaml:"empty" validate:"omitempty,oneof=skip pass mitigate" desc:"Empty files: 'pass' (delivered as a new empty file, marked empty in the reports, default; requires move.mode 'copy', refused with 'rename'), 'skip' (ignored) or 'mitigate' (treated as malware). When the key is absent and move.mode is 'rename', the connector uses 'skip' and warns."`
+	Encrypted    string `json:"encrypted" mapstructure:"encrypted" yaml:"encrypted" validate:"omitempty,oneof=error pass mitigate" desc:"Archives encrypted with an unknown password: 'error' (left in place, default), 'pass' (delivered, marked encrypted) or 'mitigate' (treated as malware)."`
 	ExtractError string `json:"extract_error" mapstructure:"extract_error" yaml:"extract_error" validate:"omitempty,oneof=error as_file" desc:"Archives that cannot be extracted cleanly: 'error' (left in place, default). Not yet supported by the host connector: 'as_file' is refused."`
 }
 
