@@ -11,7 +11,7 @@ type HostConfig struct {
 	RecursiveExtractMaxFiles int                    `json:"recursive_extract_max_files" mapstructure:"recursive_extract_max_files" yaml:"recursive_extract_max_files" desc:"Maximum number of files to extract recursively"`
 	MaxFileSize              string                 `json:"max_file_size" mapstructure:"max_file_size" yaml:"max_file_size" desc:"Maximum file size to submit to GLIMPS Malware Detect (e.g., '100MB')"`
 	Paths                    []string               `json:"paths" yaml:"paths" validate:"required,min=1" desc:"List of directories or files to monitor and scan (can be absolute or relative paths)"`
-	FollowSymlinks           bool                   `json:"follow_symlinks" yaml:"follow_symlinks" desc:"Follow symbolic links when scanning directories (if disabled, symlinks are skipped)"`
+	FollowSymlinks           bool                   `json:"follow_symlinks" mapstructure:"follow_symlinks" yaml:"follow_symlinks" desc:"Follow symbolic links when scanning directories (if disabled, symlinks are skipped)"`
 	Actions                  HostActionsConfig      `json:"actions" mapstructure:"actions" yaml:"actions" desc:"Actions to perform on scanned files (delete, quarantine, log, move, print)"`
 	Quarantine               HostQuarantineConfig   `json:"quarantine" mapstructure:"quarantine" yaml:"quarantine" desc:"Configuration for encrypted quarantine storage of malware files"`
 	Monitoring               HostMonitoringConfig   `json:"monitoring" mapstructure:"monitoring" yaml:"monitoring" desc:"Configuration for continuous directory monitoring and periodic re-scanning"`
