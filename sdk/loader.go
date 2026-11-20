@@ -652,7 +652,9 @@ func InitDefault(connectorType string) (config any, err error) {
 				Format:   "tar",
 			},
 			Monitoring: HostMonitoringConfig{
-				ModificationDelay: Duration(time.Second * 30),
+				ModificationDelay:    Duration(time.Second * 30),
+				MaxTrackedMemory:     "256MiB",
+				MaxTrackedDirPercent: 25,
 			},
 			Move: HostMoveConfig{Mode: "rename"},
 			UnanalyzablePolicy: HostUnanalyzablePolicy{

@@ -105,9 +105,11 @@ func TestInitDefault_HostNewKeys(t *testing.T) {
 	if c.UnanalyzablePolicy != want || c.Move.Mode != "rename" {
 		t.Errorf("defaults = %+v, move.mode %q; want %+v, rename", c.UnanalyzablePolicy, c.Move.Mode, want)
 	}
-	if c.WorkDir != "" || c.Move.MinThroughput != "" || c.Monitoring.DisableFSWatcher ||
-		c.Monitoring.MaxTrackedMemory != "" || c.Monitoring.MaxTrackedDirPercent != 0 {
+	if c.WorkDir != "" || c.Move.MinThroughput != "" || c.Monitoring.DisableFSWatcher {
 		t.Errorf("other new keys must default to zero (connector default), got %+v", c)
+	}
+	if c.Monitoring.MaxTrackedMemory != "256MiB" || c.Monitoring.MaxTrackedDirPercent != 25 {
+		t.Errorf("monitoring defaults = %q, %d; want 256MiB, 25", c.Monitoring.MaxTrackedMemory, c.Monitoring.MaxTrackedDirPercent)
 	}
 }
 
