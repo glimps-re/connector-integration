@@ -63,6 +63,6 @@ type HostQuarantineConfig struct {
 type HostMoveConfig struct {
 	Destination   string `json:"destination" mapstructure:"destination" yaml:"destination" desc:"Target directory for moving clean files (preserves subdirectory structure)"`
 	Source        string `json:"source" mapstructure:"source" yaml:"source" desc:"Source directory filter (only clean files within this path are moved to destination)"`
-	Mode          string `json:"mode" mapstructure:"mode" yaml:"mode" validate:"omitempty,oneof=copy rename" desc:"How clean files are moved: 'rename' (default). 'copy' (verified copy then delete the source) is not yet supported by the host connector and is refused."`
-	MinThroughput string `json:"min_throughput" mapstructure:"min_throughput" yaml:"min_throughput" desc:"Minimum expected copy throughput per second (e.g., '10MiB'); slower copies are abandoned for that attempt. Not yet supported by the host connector: any value other than the default is refused."`
+	Mode          string `json:"mode" mapstructure:"mode" yaml:"mode" validate:"omitempty,oneof=copy rename" desc:"How clean files are moved: 'copy' (default: the analyzed file is copied, the copy is checked against the analyzed SHA256, then the source is deleted, so nothing a depositor still holds open can reach the destination; costs one more read and write) or 'rename' (the file itself is moved: cheaper, but a writer that kept it open can still change it; a warning is raised at each configuration)."`
+	MinThroughput string `json:"min_throughput" mapstructure:"min_throughput" yaml:"min_throughput" desc:"Minimum expected copy throughput per second in copy mode (e.g., '10MiB', default: 10MiB); a copy gets size/throughput plus one minute, and a slower one is abandoned for that attempt and retried."`
 }

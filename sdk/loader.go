@@ -656,7 +656,7 @@ func InitDefault(connectorType string) (config any, err error) {
 				MaxTrackedMemory:     "256MiB",
 				MaxTrackedDirPercent: 25,
 			},
-			Move: HostMoveConfig{Mode: "rename"},
+			Move: HostMoveConfig{Mode: "copy", MinThroughput: "10MiB"},
 			UnanalyzablePolicy: HostUnanalyzablePolicy{
 				TooBig: "error",
 				Empty:  "skip",
