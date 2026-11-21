@@ -50,6 +50,19 @@ const (
 	// pattern of Unicode classes costs milliseconds, so the input is bounded before
 	// any parsing.
 	maxFilepathTotalBytes = 32 << 10
+	// maxFilepathRepeat bounds a counted repeat ({n}, {n,m}) of a pattern: the
+	// cost of matching grows with it.
+	maxFilepathRepeat = 100
+	// The estimated program of one pattern and of all of them, and the rune ranges
+	// of their character classes: the cost of matching grows with them, and
+	// compiling a large class costs memory. Estimated from the parse tree, so that
+	// nothing is compiled. The host connector holds the same limits and the same
+	// estimate (pkg/scanner/pathfilter.go): keep them the same.
+	maxFilepathProgram       = 512
+	maxFilepathTotalProgram  = 4096
+	maxFilepathTotalRanges   = 4096
+	filepathProgramOverhead  = 4
+	filepathEstimateSaturate = 1 << 30
 )
 
 // parseRegexp is syntax.Parse; tests replace it to count the calls.
@@ -65,7 +78,8 @@ type filepathProblem struct {
 // all the patterns, then each pattern (not empty, its size, not in both lists)
 // and only then the syntax of each (not compiled: the host connector compiles
 // once when it applies the configuration, and also refuses what only the
-// compilation sees, a pattern too large or one that matches the empty string).
+// compilation sees, a pattern whose program is too large or one that matches the
+// empty string) and its counted repeats.
 func checkFilepathFilter(f HostFilepathFilter) *filepathProblem {
 	lists := []struct {
 		name, structField string
@@ -106,9 +120,11 @@ func checkFilepathFilter(f HostFilepathFilter) *filepathProblem {
 			}
 		}
 	}
+	program, ranges := 0, 0
 	for _, l := range lists {
 		for i, p := range l.patterns {
-			if _, err := parseRegexp(p, syntax.Perl); err != nil {
+			tree, err := parseRegexp(p, syntax.Perl)
+			if err != nil {
 				// The error of Parse quotes the whole pattern: only its code is said.
 				reason := "invalid syntax"
 				if se, ok := errors.AsType[*syntax.Error](err); ok {
@@ -116,14 +132,89 @@ func checkFilepathFilter(f HostFilepathFilter) *filepathProblem {
 				}
 				return &filepathProblem{fmt.Sprintf("%s[%d]", l.name, i), l.structField, fmt.Sprintf("the pattern %s is not a valid regular expression (%s)", echoPattern(p), reason)}
 			}
+			field := fmt.Sprintf("%s[%d]", l.name, i)
+			if n := largestRepeat(tree); n > maxFilepathRepeat {
+				return &filepathProblem{field, l.structField, fmt.Sprintf("the pattern %s repeats %d times, at most %d", echoPattern(p), n, maxFilepathRepeat)}
+			}
+			insts, rs := estimateProgram(tree)
+			insts = estAdd(insts, filepathProgramOverhead)
+			switch {
+			case insts > maxFilepathProgram:
+				return &filepathProblem{field, l.structField, fmt.Sprintf("the pattern %s is estimated at %d instructions, at most %d", echoPattern(p), insts, maxFilepathProgram)}
+			case program+insts > maxFilepathTotalProgram:
+				return &filepathProblem{field, l.structField, fmt.Sprintf("the patterns are estimated at more than %d instructions in all", maxFilepathTotalProgram)}
+			case ranges+rs > maxFilepathTotalRanges:
+				return &filepathProblem{field, l.structField, fmt.Sprintf("the character classes of the patterns hold more than %d ranges in all", maxFilepathTotalRanges)}
+			}
+			program, ranges = program+insts, ranges+rs
 		}
 	}
 	return nil
 }
 
+// largestRepeat is the largest bound of a counted repeat in the tree.
+func largestRepeat(re *syntax.Regexp) int {
+	n := 0
+	if re.Op == syntax.OpRepeat {
+		n = max(re.Min, re.Max)
+	}
+	for _, sub := range re.Sub {
+		n = max(n, largestRepeat(sub))
+	}
+	return n
+}
+
+func estAdd(a, b int) int { return min(a+b, filepathEstimateSaturate) }
+
+func estMul(a, b int) int {
+	if a != 0 && b > filepathEstimateSaturate/a {
+		return filepathEstimateSaturate
+	}
+	return min(a*b, filepathEstimateSaturate)
+}
+
+// estimateProgram is an upper bound of the instructions that compiling the parsed
+// expression gives, with the counted repeats multiplied out, and the rune ranges
+// of its character classes (counted once). The tree is walked, never expanded or
+// compiled.
+func estimateProgram(re *syntax.Regexp) (insts, ranges int) {
+	sub := func() (int, int) {
+		insts, ranges := 0, 0
+		for _, s := range re.Sub {
+			i, r := estimateProgram(s)
+			insts, ranges = estAdd(insts, i), estAdd(ranges, r)
+		}
+		return insts, ranges
+	}
+	switch re.Op {
+	case syntax.OpLiteral:
+		return len(re.Rune), 0
+	case syntax.OpCharClass:
+		return 1, len(re.Rune) / 2
+	case syntax.OpAnyChar, syntax.OpAnyCharNotNL:
+		return 2, 0
+	case syntax.OpCapture, syntax.OpStar, syntax.OpPlus, syntax.OpQuest:
+		i, r := sub()
+		return estAdd(i, 2), r
+	case syntax.OpRepeat:
+		i, r := sub()
+		if re.Max < 0 {
+			return estAdd(estMul(re.Min, i), estAdd(i, 2)), r
+		}
+		return estAdd(estMul(re.Max, i), estAdd(estMul(re.Max-re.Min, 2), 2)), r
+	case syntax.OpConcat:
+		return sub()
+	case syntax.OpAlternate:
+		i, r := sub()
+		return estAdd(i, len(re.Sub)), r
+	default:
+		return 1, 0
+	}
+}
+
 // registerFilepathFilterValidation refuses, in filepath_filter, an empty pattern,
-// one over 1024 bytes, one that is not a regular expression, and one that is in
-// both lists. The count of each list is the tag max=256 of its field. It is
+// one over 1024 bytes, one that is not a regular expression, one that repeats
+// more than 100 times, and one that is in both lists. The count of each list is the tag max=256 of its field. It is
 // registered on the section, so that it runs when the section is validated on its
 // own and when the whole configuration is.
 func registerFilepathFilterValidation(validate *validator.Validate, trans ut.Translator) error {

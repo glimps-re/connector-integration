@@ -39,8 +39,8 @@ type HostUnanalyzablePolicy struct {
 // valid, or written in both lists is refused by the validation of the
 // configuration (tag filepath_pattern).
 type HostFilepathFilter struct {
-	ForbiddenPaths []string `json:"forbidden_paths" mapstructure:"forbidden_paths" yaml:"forbidden_paths" validate:"max=256" desc:"Files whose path matches are treated as malware (at most 256 patterns per list, 1024 bytes each, 32 KiB in all); for a member of an archive the path is '<archive path>/<member path>'. A forbidden path wins over a skipped one."`
-	SkippedPaths   []string `json:"skipped_paths" mapstructure:"skipped_paths" yaml:"skipped_paths" validate:"max=256" desc:"Files whose path matches (members of archives included, as '<archive path>/<member path>') are delivered without analysis, marked policy-skipped (at most 256 patterns per list, 1024 bytes each, 32 KiB in all). Risk: depositors choose the names of their files, folders and archive members; anchor these patterns on folders depositors cannot create."`
+	ForbiddenPaths []string `json:"forbidden_paths" mapstructure:"forbidden_paths" yaml:"forbidden_paths" validate:"max=256" desc:"Files whose path matches are treated as malware (at most 256 patterns per list, 1024 bytes each, 32 KiB in all; counted repeats of 100 at most, an estimated 512 instructions per pattern and 4096 in all, 4096 character-class ranges in all); for a member of an archive the path is '<archive path>/<member path>'. A forbidden path wins over a skipped one."`
+	SkippedPaths   []string `json:"skipped_paths" mapstructure:"skipped_paths" yaml:"skipped_paths" validate:"max=256" desc:"Files whose path matches (members of archives included, as '<archive path>/<member path>') are delivered without analysis, marked policy-skipped (at most 256 patterns per list, 1024 bytes each, 32 KiB in all; counted repeats of 100 at most, an estimated 512 instructions per pattern and 4096 in all, 4096 character-class ranges in all). Risk: depositors choose the names of their files, folders and archive members; anchor these patterns on folders depositors cannot create."`
 }
 
 type HostPrintConfig struct {

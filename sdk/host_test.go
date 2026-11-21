@@ -240,9 +240,20 @@ func TestHostConfig_emptyPassWithRename(t *testing.T) {
 func patterns(n, size int) []string {
 	out := make([]string, n)
 	for i := range out {
-		out[i] = strings.Repeat("a", size)
+		out[i] = padded("a", "", size)
 	}
 	return out
+}
+
+// padded is head, then flags that match nothing (they cost no instruction, so a
+// pattern of any size stays within the bounds of the program), then tail, in size
+// bytes.
+func padded(head, tail string, size int) string {
+	pad := size - len(head) - len(tail)
+	if pad < 0 {
+		return strings.Repeat(head, size-len(tail)) + tail
+	}
+	return head + strings.Repeat("(?s)", pad/4) + strings.Repeat(head, pad%4) + tail
 }
 
 func TestHostConfig_FilepathFilterAndAnalysisErrorDescriptions(t *testing.T) {
@@ -315,9 +326,17 @@ func TestHostConfig_FilepathPatternRules(t *testing.T) {
 		{name: "an empty skipped pattern delivers everything", filter: HostFilepathFilter{SkippedPaths: []string{""}}, wantError: []string{"filepath_filter.skipped_paths[0]", "empty"}},
 		{name: "an unbalanced group", filter: HostFilepathFilter{SkippedPaths: []string{"ok", "("}}, wantError: []string{"filepath_filter.skipped_paths[1]", "not a valid regular expression"}},
 		{name: "a bracket never closed", filter: HostFilepathFilter{ForbiddenPaths: []string{"(["}}, wantError: []string{"forbidden_paths[0]", "not a valid regular expression"}},
+		{name: "a repeat of 100", filter: HostFilepathFilter{ForbiddenPaths: []string{`a{100}b`}}},
+		{name: "a repeat of 101", filter: HostFilepathFilter{ForbiddenPaths: []string{`a{101}b`}}, wantError: []string{"forbidden_paths[0]", "repeats 101 times, at most 100"}},
+		{name: "a range that ends at 101", filter: HostFilepathFilter{SkippedPaths: []string{`ok`, `a{1,101}`}}, wantError: []string{"skipped_paths[1]", "repeats 101 times"}},
+		{name: "a repeat of 101 nested in a group", filter: HostFilepathFilter{SkippedPaths: []string{`(?:x(?:a{101})y)+z`}}, wantError: []string{"repeats 101 times"}},
+		{name: "an estimate under 512 instructions", filter: HostFilepathFilter{ForbiddenPaths: []string{`(?:a{50}){5}`}}},
+		{name: "an estimate over 512 instructions", filter: HostFilepathFilter{ForbiddenPaths: []string{`(?:a{50}){10}`}}, wantError: []string{"forbidden_paths[0]", "estimated at 526 instructions, at most 512"}},
+		{name: "written-out optional characters", filter: HostFilepathFilter{SkippedPaths: []string{strings.Repeat("a?", 500) + "b"}}, wantError: []string{"skipped_paths[0]", "at most 512"}},
+		{name: "classes of Unicode letters", filter: HostFilepathFilter{ForbiddenPaths: []string{`\pL`, `\pL`, `\pL`, `\pL`, `\pL`, `\pL`, `\pL`}}, wantError: []string{"more than 4096 ranges in all"}},
 		{name: "1024 ASCII bytes", filter: HostFilepathFilter{SkippedPaths: patterns(1, 1024)}},
 		{name: "1025 ASCII bytes", filter: HostFilepathFilter{ForbiddenPaths: patterns(1, 1025)}, wantError: []string{"forbidden_paths[0]", "1025 bytes, at most 1024"}},
-		{name: "512 two-byte runes are 1024 bytes", filter: HostFilepathFilter{SkippedPaths: []string{strings.Repeat("é", 512)}}},
+		{name: "1024 bytes of two-byte runes and flags", filter: HostFilepathFilter{SkippedPaths: []string{strings.Repeat("(?s)", 200) + strings.Repeat("é", 112)}}},
 		{name: "513 two-byte runes are 1026 bytes", filter: HostFilepathFilter{SkippedPaths: []string{strings.Repeat("é", 513)}}, wantError: []string{"skipped_paths[0]", "1026 bytes"}},
 		{name: "a pattern in both lists", filter: HostFilepathFilter{ForbiddenPaths: []string{"x", "same"}, SkippedPaths: []string{"y", "same"}}, wantError: []string{"filepath_filter.skipped_paths[1]", "also in forbidden_paths"}},
 		{name: "257 patterns", filter: HostFilepathFilter{SkippedPaths: patterns(257, 3)}, wantError: []string{"skipped_paths"}},
@@ -387,8 +406,7 @@ func TestHostConfig_FilepathPatternMessageEchoesLittle(t *testing.T) {
 func distinctPatterns(n, size int) []string {
 	out := make([]string, n)
 	for i := range out {
-		tail := fmt.Sprintf("%06d", i)
-		out[i] = strings.Repeat("a", size-len(tail)) + tail
+		out[i] = padded("a", fmt.Sprintf("%06d", i), size)
 	}
 	return out
 }
@@ -423,7 +441,7 @@ func TestHostConfig_FilepathPatternBudgetIsCheckedBeforeAnyParsing(t *testing.T)
 	}
 	half := func(extra string) HostFilepathFilter {
 		f := HostFilepathFilter{ForbiddenPaths: distinctPatterns(16, 1024), SkippedPaths: otherPatterns(15, 1024)}
-		f.SkippedPaths = append(f.SkippedPaths, strings.Repeat("b", 1023)+extra)
+		f.SkippedPaths = append(f.SkippedPaths, padded("b", extra, 1024))
 		return f
 	}
 	tests := []struct {
@@ -433,7 +451,7 @@ func TestHostConfig_FilepathPatternBudgetIsCheckedBeforeAnyParsing(t *testing.T)
 		wantParses int
 	}{
 		{name: "32 KiB exactly", filter: half("b"), wantParses: 32},
-		{name: "32 KiB and one byte", filter: HostFilepathFilter{ForbiddenPaths: distinctPatterns(16, 1024), SkippedPaths: append(otherPatterns(15, 1024), strings.Repeat("b", 1024), "d")}, wantErr: "32768 in all"},
+		{name: "32 KiB and one byte", filter: HostFilepathFilter{ForbiddenPaths: distinctPatterns(16, 1024), SkippedPaths: append(otherPatterns(15, 1024), padded("b", "", 1024), "d")}, wantErr: "32768 in all"},
 		{name: "257 entries", filter: HostFilepathFilter{SkippedPaths: distinctPatterns(257, 6)}, wantErr: "257 patterns, at most 256"},
 		{name: "20000 entries", filter: HostFilepathFilter{ForbiddenPaths: distinctPatterns(20_000, 6)}, wantErr: "20000 patterns, at most 256"},
 	}
