@@ -19,16 +19,28 @@ type HostConfig struct {
 	Print                    HostPrintConfig        `json:"print" mapstructure:"print" yaml:"print" desc:"Configuration for outputting scan reports to console or file"`
 	WorkDir                  string                 `json:"work_dir" mapstructure:"work_dir" yaml:"work_dir" desc:"Base directory of the connector private working directory: a gmhost-* sub-directory is created there for archive extractions and plugin files, and removed at stop (default: the system temporary directory, TMPDIR honored). It must not be a monitored path. Use a local disk: a memory filesystem (tmpfs) uses RAM, a network filesystem is slow and its locks unreliable."`
 	UnanalyzablePolicy       HostUnanalyzablePolicy `json:"unanalyzable_policy" mapstructure:"unanalyzable_policy" yaml:"unanalyzable_policy" desc:"What to do with files that cannot be analyzed"`
+	FilepathFilter           HostFilepathFilter     `json:"filepath_filter" mapstructure:"filepath_filter" yaml:"filepath_filter" desc:"Path rules applied before analysis"`
 	PluginsConfig            string                 `json:"plugins_config" yaml:"plugins_config" mapstructure:"plugins_config" desc:"Path to plugins configuration file (required for host connector plugin functionality)"`
 }
 
 // HostUnanalyzablePolicy sets the handling of files that cannot be analyzed.
 // An empty value selects the connector default.
 type HostUnanalyzablePolicy struct {
-	TooBig       string `json:"too_big" mapstructure:"too_big" yaml:"too_big" validate:"omitempty,oneof=error pass mitigate" desc:"Files above the size limit that are not extracted (and members of an archive over it, or left out by the extraction limits): 'error' (left in place, default), 'pass' (delivered, marked not analyzed) or 'mitigate' (treated as malware)."`
-	Empty        string `json:"empty" mapstructure:"empty" yaml:"empty" validate:"omitempty,oneof=skip pass mitigate" desc:"Empty files: 'pass' (delivered as a new empty file, marked empty in the reports, default; requires move.mode 'copy', refused with 'rename'), 'skip' (ignored) or 'mitigate' (treated as malware). When the key is absent and move.mode is 'rename', the connector uses 'skip' and warns."`
-	Encrypted    string `json:"encrypted" mapstructure:"encrypted" yaml:"encrypted" validate:"omitempty,oneof=error pass mitigate" desc:"Archives encrypted with an unknown password: 'error' (left in place, default), 'pass' (delivered, marked encrypted) or 'mitigate' (treated as malware)."`
-	ExtractError string `json:"extract_error" mapstructure:"extract_error" yaml:"extract_error" validate:"omitempty,oneof=error as_file" desc:"Archives that the extractor finds damaged or inconsistent: 'error' (left in place and reported, default), or 'as_file' (analyzed as a plain file and delivered if nothing is detected, only when the extractor proved that no encrypted content is hidden; any other damaged archive follows the encrypted policy)."`
+	TooBig        string `json:"too_big" mapstructure:"too_big" yaml:"too_big" validate:"omitempty,oneof=error pass mitigate" desc:"Files above the size limit that are not extracted (and members of an archive over it, or left out by the extraction limits): 'error' (left in place, default), 'pass' (delivered, marked not analyzed) or 'mitigate' (treated as malware)."`
+	Empty         string `json:"empty" mapstructure:"empty" yaml:"empty" validate:"omitempty,oneof=skip pass mitigate" desc:"Empty files: 'pass' (delivered as a new empty file, marked empty in the reports, default; requires move.mode 'copy', refused with 'rename'), 'skip' (ignored) or 'mitigate' (treated as malware). When the key is absent and move.mode is 'rename', the connector uses 'skip' and warns."`
+	Encrypted     string `json:"encrypted" mapstructure:"encrypted" yaml:"encrypted" validate:"omitempty,oneof=error pass mitigate" desc:"Archives encrypted with an unknown password: 'error' (left in place, default), 'pass' (delivered, marked encrypted) or 'mitigate' (treated as malware)."`
+	ExtractError  string `json:"extract_error" mapstructure:"extract_error" yaml:"extract_error" validate:"omitempty,oneof=error as_file" desc:"Archives that the extractor finds damaged or inconsistent: 'error' (left in place and reported, default), or 'as_file' (analyzed as a plain file and delivered if nothing is detected, only when the extractor proved that no encrypted content is hidden; any other damaged archive follows the encrypted policy)."`
+	AnalysisError string `json:"analysis_error" mapstructure:"analysis_error" yaml:"analysis_error" validate:"omitempty,oneof=error mitigate pass" desc:"Files GMalware failed to analyze: 'error' (left in place and reported, default), 'mitigate' (treated as malware, reason analysis-error) or 'pass' (delivered without a complete analysis, marked analysis-error: content not verified). A file with a detection is always malware, whatever this value."`
+}
+
+// HostFilepathFilter holds path rules, as Go regular expressions (RE2, linear
+// time) matched on the path of a file. For a member of an archive the path is
+// '<archive path>/<member path>'. A pattern that is empty, over 1024 bytes, not
+// valid, or written in both lists is refused by the validation of the
+// configuration (tag filepath_pattern).
+type HostFilepathFilter struct {
+	ForbiddenPaths []string `json:"forbidden_paths" mapstructure:"forbidden_paths" yaml:"forbidden_paths" validate:"max=256" desc:"Files whose path matches are treated as malware (at most 256 patterns per list, 1024 bytes each, 32 KiB in all); for a member of an archive the path is '<archive path>/<member path>'. A forbidden path wins over a skipped one."`
+	SkippedPaths   []string `json:"skipped_paths" mapstructure:"skipped_paths" yaml:"skipped_paths" validate:"max=256" desc:"Files whose path matches (members of archives included, as '<archive path>/<member path>') are delivered without analysis, marked policy-skipped (at most 256 patterns per list, 1024 bytes each, 32 KiB in all). Risk: depositors choose the names of their files, folders and archive members; anchor these patterns on folders depositors cannot create."`
 }
 
 type HostPrintConfig struct {

@@ -658,8 +658,13 @@ func InitDefault(connectorType string) (config any, err error) {
 			},
 			Move: HostMoveConfig{Mode: "copy", MinThroughput: "10MiB"},
 			UnanalyzablePolicy: HostUnanalyzablePolicy{
-				TooBig: "error",
-				Empty:  "pass",
+				TooBig:        "error",
+				Empty:         "pass",
+				AnalysisError: "error",
+			},
+			FilepathFilter: HostFilepathFilter{
+				ForbiddenPaths: []string{},
+				SkippedPaths:   []string{},
 			},
 			Workers:                  4,
 			ExtractWorkers:           2,
