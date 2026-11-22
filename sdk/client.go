@@ -156,9 +156,17 @@ func (c ConnectorManagerClient) getConfig(ctx context.Context) (config json.RawM
 	return
 }
 
+// Start polls the console for tasks and runs them on connector until ctx ends
+// or the connector's key is refused. At the stop, the tasks already fetched
+// but not run are acknowledged with an error within ackTimeout in all. A task
+// still running when the delay of the stop ends, or one whose acknowledgement
+// does not get through in time, is left to the console's own timeout; a task
+// that finishes is acknowledged with its real result.
 func (c ConnectorManagerClient) Start(ctx context.Context, connector Connector) {
 	logger.Debug("start connector")
-	tasks := c.tasks(ctx)
+	pollCtx, stopPolling := context.WithCancel(ctx)
+	defer stopPolling()
+	tasks := c.tasks(pollCtx)
 
 	for {
 		select {
@@ -168,6 +176,10 @@ func (c ConnectorManagerClient) Start(ctx context.Context, connector Connector) 
 				return
 			}
 			logger.Debug("received tasks", "task", task)
+			if ctx.Err() != nil {
+				c.failBufferedTasks(ctx, &task, tasks)
+				return
+			}
 
 			var taskError string
 			switch task.Action {
@@ -216,11 +228,7 @@ func (c ConnectorManagerClient) Start(ctx context.Context, connector Connector) 
 					logger.Error(taskError)
 				}
 			}
-			event := events.TaskEvent{
-				TaskID: task.ID,
-				Error:  taskError,
-			}
-			err := c.Notify(ctx, event)
+			err := c.ackTask(context.WithoutCancel(ctx), task.ID, taskError)
 			switch {
 			case errors.Is(err, ErrUnauthorizedConnector):
 				return
@@ -229,9 +237,81 @@ func (c ConnectorManagerClient) Start(ctx context.Context, connector Connector) 
 			}
 		case <-ctx.Done():
 			logger.Warn("context done", slog.String("reason", ctx.Err().Error()))
-			// TODO
+			c.failBufferedTasks(ctx, nil, tasks)
 			return
 		}
+	}
+}
+
+// ackTimeout bounds each acknowledgement and, at a stop, the draining of the
+// tasks left: the stop of the connector must not wait for a console that does
+// not answer. A variable for tests.
+var ackTimeout = 5 * time.Second
+
+// stoppedTaskError is the error the console shows for a task fetched but
+// never run.
+const stoppedTaskError = "connector stopped before running the task"
+
+// ackTask acknowledges a task within ackTimeout, or within the deadline of
+// ctx when that is sooner. The caller detaches ctx from a cancellation that
+// must not cut the acknowledgement.
+func (c ConnectorManagerClient) ackTask(ctx context.Context, taskID, taskError string) error {
+	ackCtx, cancel := context.WithTimeout(ctx, ackTimeout)
+	defer cancel()
+	return c.Notify(ackCtx, events.TaskEvent{TaskID: taskID, Error: taskError})
+}
+
+// failBufferedTasks acknowledges with an error first, when set, and the tasks
+// the console already handed over (they are in its to-ack queue) that Start
+// will not run, so that the console shows them at once instead of after its
+// ack timeout. It waits for the end of the polling goroutine, which closes
+// tasks, and gives up after ackTimeout in all, or when the key is refused.
+func (c ConnectorManagerClient) failBufferedTasks(ctx context.Context, first *Task, tasks <-chan Task) {
+	deadline, cancel := context.WithTimeout(context.WithoutCancel(ctx), ackTimeout)
+	defer cancel()
+	var left []string
+	fail := func(task Task) (stop bool) {
+		err := c.ackTask(deadline, task.ID, stoppedTaskError)
+		switch {
+		case errors.Is(err, ErrUnauthorizedConnector):
+			left = append(left, task.ID)
+			return true
+		case err != nil:
+			left = append(left, task.ID)
+		}
+		return false
+	}
+	stopped := first != nil && fail(*first)
+	for !stopped {
+		select {
+		case task, ok := <-tasks:
+			if !ok {
+				c.logLeft(left)
+				return
+			}
+			stopped = fail(task)
+		case <-deadline.Done():
+			stopped = true
+		}
+	}
+	for {
+		select {
+		case task, ok := <-tasks:
+			if !ok {
+				c.logLeft(left)
+				return
+			}
+			left = append(left, task.ID)
+		default:
+			c.logLeft(left)
+			return
+		}
+	}
+}
+
+func (ConnectorManagerClient) logLeft(ids []string) {
+	if len(ids) > 0 {
+		logger.Warn("tasks left unacknowledged at the stop", slog.Any("task-ids", ids))
 	}
 }
 
@@ -307,8 +387,22 @@ func (c ConnectorManagerClient) tasks(ctx context.Context) (tasks <-chan Task) {
 					logger.Error("cannot get tasks", slog.String("error", err.Error()))
 					continue
 				}
-				for _, t := range tasks {
-					tasksC <- t
+				for i, t := range tasks {
+					select {
+					case tasksC <- t:
+						continue
+					default:
+					}
+					select {
+					case tasksC <- t:
+					case <-ctx.Done():
+						dropped := make([]string, 0, len(tasks)-i)
+						for _, d := range tasks[i:] {
+							dropped = append(dropped, d.ID)
+						}
+						logger.Warn("tasks fetched but not handed to Start at the stop", slog.Any("task-ids", dropped))
+						return
+					}
 				}
 			}
 		}
