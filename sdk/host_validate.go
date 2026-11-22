@@ -16,9 +16,9 @@ import (
 // move mode the host connector refuses.
 const emptyPassRenameTag = "empty_pass_with_rename"
 
-// HostEmptyPassWithRenameMessage is what the host connector says of the
+// HostEmptyDeliveryWithRenameMessage is what the host connector says of the
 // combination; the console says the same when the configuration is saved.
-const HostEmptyPassWithRenameMessage = "unanalyzable_policy.empty: pass delivers an empty file as a new empty file, which needs move.mode copy: it is refused with rename while the move action is on (leave the key out to skip empty files in that mode)"
+const HostEmptyDeliveryWithRenameMessage = "unanalyzable_policy.empty: pass delivers an empty file as a new empty file, which needs move.mode copy: it is refused with rename while the move action is on (leave the key out to skip empty files in that mode)"
 
 // filepathPatternTag is the tag of the rules on the patterns of filepath_filter.
 const filepathPatternTag = "filepath_pattern"
@@ -245,7 +245,7 @@ func registerHostConfigValidation(validate *validator.Validate, trans ut.Transla
 		return err
 	}
 	validate.RegisterStructValidation(func(sl validator.StructLevel) {
-		c, ok := sl.Current().Interface().(HostConfig)
+		c, ok := reflect.TypeAssert[HostConfig](sl.Current())
 		if !ok {
 			return
 		}
@@ -255,6 +255,6 @@ func registerHostConfigValidation(validate *validator.Validate, trans ut.Transla
 	}, HostConfig{})
 	return validate.RegisterTranslation(emptyPassRenameTag, trans,
 		func(ut.Translator) error { return nil },
-		func(ut.Translator, validator.FieldError) string { return HostEmptyPassWithRenameMessage },
+		func(ut.Translator, validator.FieldError) string { return HostEmptyDeliveryWithRenameMessage },
 	)
 }

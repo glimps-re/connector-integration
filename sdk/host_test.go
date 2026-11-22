@@ -229,7 +229,7 @@ func TestHostConfig_emptyPassWithRename(t *testing.T) {
 			if !errors.As(err, &verrs) || len(verrs) != 1 {
 				t.Fatalf("error = %v, want one validation error", err)
 			}
-			if got := verrs[0].Translate(v.Trans); got != HostEmptyPassWithRenameMessage {
+			if got := verrs[0].Translate(v.Trans); got != HostEmptyDeliveryWithRenameMessage {
 				t.Errorf("message = %q, want the connector's wording", got)
 			}
 		})
