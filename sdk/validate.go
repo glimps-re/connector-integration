@@ -14,7 +14,7 @@ import (
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 var validConnectorTypes = []string{DummyKey, M365Key, ICAPKey, SharepointKey, HostKey}
@@ -42,7 +42,7 @@ type StrictJSONSerializer struct{}
 
 // Serialize converts an interface into a json and writes it to the response.
 // You can optionally use the indent parameter to produce pretty JSONs.
-func (d StrictJSONSerializer) Serialize(c echo.Context, i any, indent string) error {
+func (d StrictJSONSerializer) Serialize(c *echo.Context, i any, indent string) error {
 	enc := json.NewEncoder(c.Response())
 	if indent != "" {
 		enc.SetIndent("", indent)
@@ -51,7 +51,7 @@ func (d StrictJSONSerializer) Serialize(c echo.Context, i any, indent string) er
 }
 
 // Deserialize reads a JSON from a request body and converts it into an interface.
-func (d StrictJSONSerializer) Deserialize(c echo.Context, i any) (err error) {
+func (d StrictJSONSerializer) Deserialize(c *echo.Context, i any) (err error) {
 	dec := json.NewDecoder(c.Request().Body)
 	dec.DisallowUnknownFields()
 	err = dec.Decode(i)
@@ -101,7 +101,7 @@ func (v *defaultValidator) Validate(i any) error {
 	return nil
 }
 
-func BindAndValidate(c echo.Context, model any) (err error) {
+func BindAndValidate(c *echo.Context, model any) (err error) {
 	// Bind check params in given order: route, request (get and delete only), body
 	if err = c.Bind(model); err != nil {
 		return newValidationError(err)
@@ -157,7 +157,7 @@ func newValidationError(err error) (newError ValidationError) {
 	field := reg.FindStringSubmatch(err.Error())
 	switch {
 	case len(field) > 0:
-		newError.Details = []echo.Map{{field[1]: "unknown field"}}
+		newError.Details = []map[string]any{{field[1]: "unknown field"}}
 	default:
 		newError.Err = err
 	}
@@ -166,8 +166,8 @@ func newValidationError(err error) (newError ValidationError) {
 
 // MUST BE used for validation error. Will be return as ResponseError with a http code 400 (bad request)
 type ValidationError struct {
-	Details []echo.Map `json:"details"`
-	Err     error      `json:"error"`
+	Details []map[string]any `json:"details"`
+	Err     error            `json:"error"`
 }
 
 func (e ValidationError) Error() string {
