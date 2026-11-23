@@ -1,5 +1,22 @@
 # Changelog
 
+## [v0.10.0]
+
+### Added
+
+* HostConnector config: `quarantine.format` (`tar` default, `zip`) selects the container format for newly quarantined files
+* HostConnector config: `monitoring.disable_fs_watcher`, `monitoring.max_tracked_memory`, `monitoring.max_tracked_dir_percent`
+* HostConnector config: `move.mode` (`copy`, `rename`), `move.min_throughput`
+* HostConnector config: `work_dir` and `unanalyzable_policy` (`too_big`, `empty`, `encrypted`, `extract_error`). For all new keys the zero value means the connector default. Default configuration sets `move.mode: copy`, `unanalyzable_policy.too_big: error` and `unanalyzable_policy.empty: pass` (an empty file is delivered as a new empty file; the host connector uses `skip`, with a warning, when the key is absent and `move.mode` is `rename`, and refuses `pass` with `rename` while the move action is on; the configuration validation refuses that combination too)
+
+* HostConnector config: `filepath_filter` (`forbidden_paths`, `skipped_paths`: lists of Go regular expressions, at most 256 patterns per list, 1024 bytes each and 32 KiB in all; an empty, invalid or duplicated pattern is refused by the validation) and `unanalyzable_policy.analysis_error` (`error` default, `mitigate`, `pass`), which replace the `filepath_filter` and `error_filter` plugins of the host connector
+  * Counted repeats (`{n}`, `{n,m}`) are limited to 100.
+  * The size of a pattern is estimated from its parse tree, without compiling it: at most 512 instructions per pattern, 4096 in all, and 4096 rune ranges of character classes in all; the validation names the bound that is exceeded.
+
+### Security
+
+* Dependency updates: echo 4.16.1, golang.org/x/crypto 0.59.0, x/net 0.62.0, x/text 0.44.0, x/sys 0.50.0. GO-2026-6875 and GO-2026-6872 (echo proxy and rate limiter middlewares) have no upstream fix and are not reachable: the SDK uses neither middleware
+
 ## [v0.9.1]
 
 ### Changed

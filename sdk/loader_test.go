@@ -3,6 +3,7 @@ package sdk
 import (
 	"testing"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
@@ -742,6 +743,52 @@ func Test_getConfigFields(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "ok with HostQuarantineConfig format enum",
+			args: args{
+				config: HostQuarantineConfig{},
+			},
+			wantConfigFields: []ConfigField{
+				{
+					Name:           "Location",
+					Key:            "location",
+					Type:           "string",
+					Description:    "Directory path where quarantined files are stored (files are encrypted with .lock extension)",
+					Validation:     []FrontValidation{},
+					Reconfigurable: true,
+					DefaultValue:   "",
+				},
+				{
+					Name:           "Password",
+					Key:            "password",
+					Type:           "string",
+					Description:    "Password for encrypting quarantined files (required to restore files later)",
+					Validation:     []FrontValidation{},
+					Reconfigurable: true,
+					DefaultValue:   "",
+					Password:       true,
+				},
+				{
+					Name:           "Registry",
+					Key:            "registry",
+					Type:           "string",
+					Description:    "Path to the database that store quarantined and restored file entry (leave empty for in-memory store, lost on restart)",
+					Validation:     []FrontValidation{},
+					Reconfigurable: true,
+					DefaultValue:   "",
+				},
+				{
+					Name:           "Format",
+					Key:            "format",
+					Type:           "string",
+					Description:    "Container format for new quarantined files: 'tar' (encrypted tar, default) or 'zip' (password-protected ZIP openable with standard archive tools; existing files stay readable whatever the value). With 'zip' the quarantine password must be considered public: do not reuse it elsewhere",
+					Validation:     []FrontValidation{},
+					Reconfigurable: true,
+					DefaultValue:   "",
+					Enum:           []string{"tar", "zip"},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -756,6 +803,43 @@ func Test_getConfigFields(t *testing.T) {
 
 			if diff := cmp.Diff(configFields, tt.wantConfigFields, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("getConfigFields() config fields did not match expected, diff = %v", diff)
+			}
+		})
+	}
+}
+
+func TestInitDefault_HostQuarantineFormat(t *testing.T) {
+	config, err := InitDefault(HostKey)
+	if err != nil {
+		t.Fatalf("InitDefault(%q) error = %v", HostKey, err)
+	}
+	hostConfig, ok := config.(*HostConfig)
+	if !ok {
+		t.Fatalf("InitDefault(%q) returned %T, want *HostConfig", HostKey, config)
+	}
+	if hostConfig.Quarantine.Format != "tar" {
+		t.Errorf("InitDefault(%q) Quarantine.Format = %q, want %q", HostKey, hostConfig.Quarantine.Format, "tar")
+	}
+}
+
+func TestHostQuarantineConfig_FormatValidation(t *testing.T) {
+	validate := validator.New()
+	tests := []struct {
+		name    string
+		format  string
+		wantErr bool
+	}{
+		{name: "default tar accepted", format: "tar"},
+		{name: "zip accepted", format: "zip"},
+		{name: "empty accepted via omitempty", format: ""},
+		{name: "unsupported format rejected", format: "7z", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := HostQuarantineConfig{Format: tt.format}
+			err := validate.Struct(cfg)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validate.Struct(HostQuarantineConfig{Format: %q}) error = %v, wantErr %v", tt.format, err, tt.wantErr)
 			}
 		})
 	}

@@ -649,9 +649,22 @@ func InitDefault(connectorType string) (config any, err error) {
 			Quarantine: HostQuarantineConfig{
 				Password: "infected",
 				Location: "/var/lib/gmhost",
+				Format:   "tar",
 			},
 			Monitoring: HostMonitoringConfig{
-				ModificationDelay: Duration(time.Second * 30),
+				ModificationDelay:    Duration(time.Second * 30),
+				MaxTrackedMemory:     "256MiB",
+				MaxTrackedDirPercent: 25,
+			},
+			Move: HostMoveConfig{Mode: "copy", MinThroughput: "10MiB"},
+			UnanalyzablePolicy: HostUnanalyzablePolicy{
+				TooBig:        "error",
+				Empty:         "pass",
+				AnalysisError: "error",
+			},
+			FilepathFilter: HostFilepathFilter{
+				ForbiddenPaths: []string{},
+				SkippedPaths:   []string{},
 			},
 			Workers:                  4,
 			ExtractWorkers:           2,
